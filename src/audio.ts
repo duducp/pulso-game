@@ -77,3 +77,7 @@ export function soundPowerUp(): void {
 export function soundOrbCollect(): void {
   playTone(1200, 0.06, 'sine', 0.04);
 }
+
+export function soundNav(): void {
+  playTone(880, 0.04, 'sine', 0.03);
+}

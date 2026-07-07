@@ -271,24 +271,33 @@ canvas {
   z-index: 100;
 }
 
+#startScreen {
+  justify-content: flex-start;
+  padding: max(32px, 7vh) 20px max(18px, 3vh);
+}
+
 .hidden {
   display: none;
 }
 
-.eyebrow {
-  font-family: ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 4px;
-  color: var(--red);
-  text-transform: uppercase;
-  margin-bottom: 8px;
+/* ─── Mode Center (fills space to vertically center carousel) ─── */
+
+.mode-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  width: 100%;
 }
 
 h1 {
-  font-size: 52px;
-  margin: 0;
+  font-size: 44px;
+  margin: 0 0 12px;
   letter-spacing: -2px;
   font-weight: 700;
+  flex-shrink: 0;
   background: linear-gradient(180deg, #fff, var(--cyan));
   -webkit-background-clip: text;
   background-clip: text;
@@ -303,65 +312,109 @@ h1 {
   line-height: 1.6;
 }
 
-/* ─── Name Input ────────────────────────────────────────── */
+/* ─── Mode Selector (Carousel) ──────────────────────────── */
 
-#nameInput {
+.mode-selector {
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  max-width: 380px;
+  min-height: 48px;
+  margin: 0 0 20px;
+}
+
+.mode-opt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--line);
   color: var(--ink);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+  letter-spacing: 0.3px;
+}
+
+.mode-opt .mo-icon {
+  font-size: 18px;
+  width: 28px;
   text-align: center;
-  padding: 8px 4px;
-  width: 200px;
-  letter-spacing: 1px;
-  outline: none;
-  margin-bottom: 18px;
-  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
-#nameInput::placeholder {
+.mode-opt .mo-label {
+  flex-shrink: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.mode-opt.focused {
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+}
+
+.mode-opt.focused .mo-icon {
+  filter: brightness(1.2);
+}
+
+@media (hover: hover) {
+  .mode-opt:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .mode-opt.focused:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* :active removido — inline transform do JS tem prioridade */
+
+/* ─── Mode Description ──────────────────────────────────── */
+
+#modeDesc {
+  font-size: 14px;
   color: var(--dim);
+  max-width: 260px;
+  line-height: 1.4;
+  margin: 0 0 16px;
+  min-height: 20px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-#nameInput:focus {
-  border-color: var(--cyan);
-}
+/* ─── Mode Dots ─────────────────────────────────────────── */
 
-/* ─── Start Screen Stats ────────────────────────────────── */
-
-.stats-row {
+#modeDots {
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
-}
-
-.stat-pill {
-  display: flex;
-  flex-direction: column;
+  justify-content: center;
+  min-height: 14px;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 6px 12px;
-  min-width: 56px;
 }
 
-.sp-label {
-  font-family: ui-monospace, monospace;
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  color: var(--dim);
-  text-transform: uppercase;
+.mdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dim);
+  opacity: 0.25;
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
 }
 
-.sp-val {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--cyan);
-  line-height: 1.2;
+.mdot.active {
+  opacity: 0.8;
+  transform: scale(1.5);
 }
+
+/* ─── Animations ────────────────────────────────────────── */
 
 @keyframes titleGlow {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -373,74 +426,14 @@ h1 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Staggered entrance ────────────────────────────────── */
-
 #startScreen > * {
-  animation: fadeSlideIn 0.45s ease both;
+  animation: fadeSlideIn 0.5s ease both;
 }
-
-#startScreen > :nth-child(1) { animation-delay: 0.00s; }
-#startScreen > :nth-child(2) { animation-delay: 0.07s; }
-#startScreen > :nth-child(3) { animation-delay: 0.14s; }
-#startScreen > :nth-child(4) { animation-delay: 0.21s; }
-#startScreen > :nth-child(5) { animation-delay: 0.28s; }
-#startScreen > :nth-child(6) { animation-delay: 0.35s; }
-#startScreen > :nth-child(7) { animation-delay: 0.42s; }
-#startScreen > :nth-child(8) { animation-delay: 0.49s; }
-#startScreen > :nth-child(9) { animation-delay: 0.56s; }
-
-#startScreen h1 {
-  animation: fadeSlideIn 0.45s ease both, titleGlow 3s ease-in-out 0.45s infinite;
+#startScreen > h1 {
+  animation: fadeSlideIn 0.5s ease both, titleGlow 3s ease-in-out 0.5s infinite;
 }
-
-/* ─── Start Screen Buttons ──────────────────────────────── */
-
-.modebtns-primary {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  max-width: 280px;
-  margin-bottom: 6px;
-}
-
-.modebtns-primary button {
-  flex: 1;
-  font-size: 13px;
-  padding: 13px 8px;
-}
-
-.modebtns-secondary {
-  display: flex;
-  gap: 6px;
-  width: 100%;
-  max-width: 280px;
-  margin-bottom: 14px;
-}
-
-.modebtns-secondary button {
-  flex: 1;
-  font-size: 11px;
-  padding: 10px 6px;
-  letter-spacing: 0.3px;
-}
-
-/* ─── Power-up Legend ───────────────────────────────────── */
-
-.legend-wrap {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.legend-icon {
-  font-size: 14px;
-  opacity: 0.45;
-  font-family: 'Noto Color Emoji', sans-serif;
-}
-
-.legend-icon.exclusive {
-  opacity: 0.2;
-}
+#startScreen > .mode-center  { animation-delay: 0.08s; }
+#startScreen > .lbwrap       { animation-delay: 0.15s; }
 
 /* ─── Buttons ───────────────────────────────────────────── */
 
@@ -493,28 +486,10 @@ button:active {
   border: 1px solid var(--line);
 }
 
-.timedBtn {
-  background: var(--red);
-  color: #1A0508;
-  box-shadow: 0 0 30px rgba(255, 92, 108, 0.3);
-}
-
-.survivalBtn {
-  background: var(--orange);
-  color: #1A0800;
-  box-shadow: 0 0 30px rgba(251, 146, 60, 0.25);
-}
-
-.zenBtn {
-  background: var(--purple);
-  color: #0C001A;
-  box-shadow: 0 0 30px rgba(167, 139, 250, 0.25);
-}
-
 /* ─── Leaderboard ───────────────────────────────────────── */
 
 .lbwrap {
-  margin-top: 22px;
+  margin-top: 12px;
   width: 100%;
   max-width: 280px;
   text-align: left;
@@ -720,6 +695,42 @@ button:active {
 @keyframes powerUpPulse {
   from { transform: translateX(-50%) scale(1); }
   to { transform: translateX(-50%) scale(1.1); }
+}
+
+/* ─── Name Prompt ──────────────────────────────────────── */
+
+#namePrompt {
+  z-index: 110;
+  gap: 20px;
+}
+
+#namePrompt #nameInput {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--line);
+  color: var(--ink);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  text-align: center;
+  padding: 8px 4px;
+  width: 220px;
+  letter-spacing: 2px;
+  outline: none;
+  text-transform: uppercase;
+}
+
+#namePrompt #nameInput::placeholder {
+  color: var(--dim);
+  font-size: 18px;
+  letter-spacing: 4px;
+}
+
+#namePrompt #nameInput:focus {
+  border-color: var(--cyan);
+}
+
+#namePrompt .label {
+  font-size: 13px;
 }
 
 /* ─── Toast ─────────────────────────────────────────────── */

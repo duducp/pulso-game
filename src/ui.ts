@@ -15,6 +15,7 @@ export function renderLBInto(
   el: HTMLElement,
   list: LeaderboardEntry[],
   highlightTs?: number,
+  limit = 5,
 ): void {
   if (!list || list.length === 0) {
     el.innerHTML =
@@ -22,7 +23,7 @@ export function renderLBInto(
     return;
   }
   el.innerHTML = list
-    .slice(0, 5)
+    .slice(0, limit)
     .map((e, i) => {
       const hl = e.t === highlightTs ? 'style="color:#FFC24D"' : '';
       return (
