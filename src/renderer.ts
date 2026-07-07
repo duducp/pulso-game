@@ -1,5 +1,6 @@
 import type { GameState, PowerUpType } from './types';
 import { COLORS } from './types';
+import { POWERUP_ICONS, POWERUP_RENDER_COLORS } from './powerups';
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -95,18 +96,10 @@ export class Renderer {
     }
 
     // Power-ups
-    const powerUpIcons: Record<PowerUpType, string> = {
-      shield: '🛡️', slowmo: '⏱️', doublepulse: '💥', magnet: '🧲',
-      freeze: '❄️', plating: '🔰', autofocus: '🎯',
-    };
-    const powerUpColors: Record<PowerUpType, string> = {
-      shield: COLORS.shield, slowmo: COLORS.slowmo, doublepulse: COLORS.doublepulse, magnet: COLORS.magnet,
-      freeze: COLORS.freeze, plating: COLORS.plating, autofocus: COLORS.autofocus,
-    };
     for (const pu of s.powerUps) {
       if (pu.collected) continue;
       const bob = Math.sin(pu.phase * 3) * 4;
-      const color = powerUpColors[pu.type];
+      const color = POWERUP_RENDER_COLORS[pu.type];
 
       // Glow
       ctx.shadowColor = color;
@@ -123,7 +116,7 @@ export class Renderer {
       ctx.font = '22px "Noto Color Emoji", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(powerUpIcons[pu.type], pu.x, pu.y + bob + 1);
+      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob + 1);
     }
 
     // Particles
@@ -158,10 +151,20 @@ export class Renderer {
         case 'powerup':
           ctx.fillStyle = p.color ?? COLORS.cyan;
           ctx.shadowColor = p.color ?? COLORS.cyan;
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 14;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
+          ctx.shadowBlur = 0;
+          break;
+        case 'powerup-ring':
+          ctx.strokeStyle = p.color ?? COLORS.cyan;
+          ctx.shadowColor = p.color ?? COLORS.cyan;
+          ctx.shadowBlur = 20;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.stroke();
           ctx.shadowBlur = 0;
           break;
         case 'orb':

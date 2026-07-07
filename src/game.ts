@@ -2,13 +2,16 @@ import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, Ga
 import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION, STEP,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
+} from './types';
+import {
   POWERUP_SHIELD_DURATION,
   POWERUP_SLOWMO_DURATION, POWERUP_DOUBLE_DURATION,
   POWERUP_SLOWMO_FACTOR, POWERUP_DOUBLE_FACTOR,
   POWERUP_MAGNET_DURATION, MAGNET_ORBS_PER_PASS,
   POWERUP_FREEZE_DURATION, POWERUP_PLATING_DURATION, POWERUP_AUTOFOCUS_DURATION,
-  POWERUP_WEIGHTS, POWERUPS_BY_MODE,
-} from './types';
+  POWERUP_WEIGHTS, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_FLASH_COLORS,
+} from './powerups';
+import { MODE_LABELS, MODE_GAMEOVER_LABELS, MODE_LB_TITLES, MODE_BEST_KEYS } from './types';
 import { xmur3, mulberry32, todayStr } from './rng';
 import {
   spawnRing,
@@ -17,6 +20,7 @@ import {
   spawnRecordBurst,
   spawnBreakBurst,
   spawnNearText,
+  spawnNearBurst,
   spawnPowerUpCollect,
   spawnMagnetOrbs,
   updateParticles,
@@ -31,20 +35,11 @@ import {
   soundUnpause,
   soundPowerUp,
   soundOrbCollect,
+  soundBounce,
   isSoundEnabled,
 } from './audio';
-import { submitScore, loadBest, saveBest } from './storage';
+import { submitScore, loadBestRecord, saveBestRecord } from './storage';
 import { renderLBInto } from './ui';
-
-const POWERUP_ICONS: Record<PowerUpType, string> = {
-  shield: '🛡️',
-  slowmo: '⏱️',
-  doublepulse: '💥',
-  magnet: '🧲',
-  freeze: '❄️',
-  plating: '🔰',
-  autofocus: '🎯',
-};
 
 export class Game {
   // ─── Public state ────────────────────────────────────────
@@ -77,6 +72,7 @@ export class Game {
   zenFalls = 0;
   activePowerUp: PowerUpType | null = null;
   powerUpTimer = 0;
+  magnetOrbs = 0;
   slowmoMultiplier = 1;
   scoreMultiplier = 1;
 
@@ -86,10 +82,11 @@ export class Game {
   // ─── Internal ────────────────────────────────────────────
   private lastSpawn = 0;
   private rng: () => number = Math.random;
-  private bestFree = 0;
-  private bestDailyToday = 0;
-  private bestTimed = 0;
-  private bestSurvival = 0;
+  // Best scores — store { score, date } so we can show when the record was set
+  private bestFree: { score: number; date: string | null } = { score: 0, date: null };
+  private bestDailyToday: { score: number; date: string | null } = { score: 0, date: null };
+  private bestTimed: { score: number; date: string | null } = { score: 0, date: null };
+  private bestSurvival: { score: number; date: string | null } = { score: 0, date: null };
   private _lastRank: number | null = null;
   private _currentBest = 0;
   private recordPaceEl: HTMLElement | null = null;
@@ -204,6 +201,7 @@ export class Game {
     this.zenFalls = 0;
     this.activePowerUp = null;
     this.powerUpTimer = 0;
+    this.magnetOrbs = 0;
     this.slowmoMultiplier = 1;
     this.scoreMultiplier = 1;
 
@@ -233,10 +231,10 @@ export class Game {
 
   async loadPersistedData(): Promise<void> {
     const [bestFree, bestDaily, bestTimed, bestSurvival] = await Promise.all([
-      loadBest('profile:best:free'),
-      loadBest('profile:best:daily:' + todayStr()),
-      loadBest('profile:best:timed'),
-      loadBest('profile:best:survival'),
+      loadBestRecord('profile:best:free'),
+      loadBestRecord('profile:best:daily:' + todayStr()),
+      loadBestRecord('profile:best:timed'),
+      loadBestRecord('profile:best:survival'),
     ]);
     this.bestFree = bestFree;
     this.bestDailyToday = bestDaily;
@@ -245,25 +243,19 @@ export class Game {
   }
 
   getModeLabel(): string {
-    const labels: Record<GameModeType, string> = {
-      free: 'MODO LIVRE',
-      daily: 'DESAFIO DE HOJE · ' + todayStr().slice(5, 10).replace('-', '/'),
-      timed: 'CRONOMETRADO',
-      survival: 'SOBREVIVÊNCIA',
-      zen: 'ZEN',
-    };
-    return labels[this.modeType];
+    const base = MODE_LABELS[this.modeType];
+    if (this.modeType === 'daily') {
+      return base + ' · ' + todayStr().slice(5, 10).replace('-', '/');
+    }
+    return base;
   }
 
   getBestKey(): string {
-    const keys: Record<GameModeType, string> = {
-      free: 'profile:best:free',
-      daily: 'profile:best:daily:' + todayStr(),
-      timed: 'profile:best:timed',
-      survival: 'profile:best:survival',
-      zen: '',
-    };
-    return keys[this.modeType];
+    const base = MODE_BEST_KEYS[this.modeType];
+    if (this.modeType === 'daily') {
+      return base + todayStr();
+    }
+    return base;
   }
 
   getLBKey(): string {
@@ -274,10 +266,10 @@ export class Game {
     this.modeType = mode;
     this.dailyMode = mode === 'daily';
 
-    if (mode === 'free') this.targetBest = this.bestFree;
-    else if (mode === 'daily') this.targetBest = this.bestDailyToday;
-    else if (mode === 'timed') this.targetBest = this.bestTimed;
-    else if (mode === 'survival') this.targetBest = this.bestSurvival;
+    if (mode === 'free') this.targetBest = this.bestFree.score;
+    else if (mode === 'daily') this.targetBest = this.bestDailyToday.score;
+    else if (mode === 'timed') this.targetBest = this.bestTimed.score;
+    else if (mode === 'survival') this.targetBest = this.bestSurvival.score;
     else this.targetBest = 0;
 
     this.timeRemaining = mode === 'timed' ? TIMED_DURATION : 0;
@@ -319,17 +311,12 @@ export class Game {
       soundPause();
       wrap?.classList.add('paused');
       ps?.classList.remove('hidden');
-      ps?.classList.add('visible');
     } else if (this.mode === 'paused') {
       soundUnpause();
-      ps?.classList.remove('visible');
-      setTimeout(() => {
-        if (this.mode === 'paused') {
-          wrap?.classList.remove('paused');
-          this.paused = false;
-          this.mode = 'playing';
-        }
-      }, 250);
+      ps?.classList.add('hidden');
+      wrap?.classList.remove('paused');
+      this.paused = false;
+      this.mode = 'playing';
     }
   }
 
@@ -371,11 +358,7 @@ export class Game {
     spawnPowerUpCollect(this.particles, pu.x, pu.y, pu.type);
 
     // Visual flash based on type
-    const flashColors: Record<PowerUpType, string> = {
-      shield: '93,186,255', slowmo: '187,134,252', doublepulse: '255,107,157',
-      magnet: '255,215,0', freeze: '0,229,255', plating: '255,138,101', autofocus: '206,147,216',
-    };
-    const color = flashColors[pu.type];
+    const color = POWERUP_FLASH_COLORS[pu.type];
     const fel = this.flashOverlayEl;
     if (fel) {
       fel.style.background = `rgba(${color},0.2)`;
@@ -404,6 +387,7 @@ export class Game {
       case 'magnet':
         this.activePowerUp = 'magnet';
         this.powerUpTimer = POWERUP_MAGNET_DURATION;
+        this.magnetOrbs = 0;
         break;
       case 'freeze':
         this.activePowerUp = 'freeze';
@@ -424,7 +408,8 @@ export class Game {
     // Update power-up HUD
     if (this.powerUpTagEl) {
       this.powerUpTagEl.style.display = 'flex';
-      this.powerUpTagEl.innerHTML = `${POWERUP_ICONS[pu.type]} <span>${Math.ceil(this.powerUpTimer)}</span>`;
+      const orbCnt = pu.type === 'magnet' ? ` <span class="pu-orbs">🪙0</span>` : '';
+      this.powerUpTagEl.innerHTML = `${POWERUP_ICONS[pu.type]} <span>${Math.ceil(this.powerUpTimer)}</span>${orbCnt}`;
     }
     this.updatePowerUpIndicators();
   }
@@ -521,12 +506,17 @@ export class Game {
     this.player.vy += this.H * 1.55 * dt;
     this.player.y += this.player.vy * dt;
     this.player.rot = Math.max(-0.5, Math.min(1.1, this.player.vy / 900));
-    if (this.player.y - this.player.r < 0) { this.player.y = this.player.r; this.player.vy = 0; }
+    if (this.player.y - this.player.r < 0) {
+      this.player.y = this.player.r;
+      this.player.vy = 0;
+      if (this.modeType === 'zen') soundBounce();
+    }
     if (this.player.y + this.player.r > this.H) {
       if (this.modeType === 'zen') {
         this.player.y = this.H - this.player.r;
         this.player.vy = -this.H * 0.4;
         this.zenFalls++;
+        soundBounce();
       } else {
         this.endGame();
         return;
@@ -577,11 +567,18 @@ export class Game {
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < this.player.r + 8) {
           this.score += 1;
+          this.magnetOrbs++;
           if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
           soundOrbCollect();
           this.particles.splice(i, 1);
         }
       }
+    }
+
+    // ── Update magnet orb count in power-up tag ──
+    if (this.activePowerUp === 'magnet' && this.powerUpTagEl) {
+      const orbSpan = this.powerUpTagEl.querySelector('.pu-orbs');
+      if (orbSpan) orbSpan.textContent = '🪙' + this.magnetOrbs;
     }
 
     updateParticles(this.particles, dt);
@@ -744,6 +741,27 @@ export class Game {
               this.comboTagEl?.classList.remove('show');
             }
             spawnNearText(this.particles, this.player.x, this.player.y);
+
+            // Visual burst: sparks at the gap edge + shake + flash
+            const combo = this.combo;
+            const shakeAmount = Math.min(0.10 + combo * 0.006, 0.22);
+            this.shakeTime = Math.max(this.shakeTime, shakeAmount);
+            const edgeX = o.x + o.w / 2;
+            const nearTop = this.player.y - this.player.r - topY < botY - (this.player.y + this.player.r);
+            const edgeY = nearTop ? topY : botY;
+            spawnNearBurst(this.particles, edgeX, edgeY, nearTop ? 1 : -1, combo);
+            // Brief flash at the edge — scales with combo
+            const fel = this.flashOverlayEl;
+            if (fel) {
+              const flashAlpha = Math.min(0.12 + combo * 0.008, 0.30);
+              fel.style.background = `rgba(255,194,77,${flashAlpha})`;
+              fel.classList.add('flash');
+              setTimeout(() => {
+                fel.classList.remove('flash');
+                fel.style.background = 'rgba(255,194,77,0.15)';
+              }, Math.min(100 + combo * 5, 200));
+            }
+
             this.gainPower(POWER_NEAR);
             this.checkRecordCrossing();
           }
@@ -793,10 +811,11 @@ export class Game {
 
     const bestKey = this.getBestKey();
     if (bestKey) {
-      if (this.modeType === 'free' && this.score > this.bestFree) { this.bestFree = this.score; saveBest(bestKey, this.score); }
-      else if (this.modeType === 'daily' && this.score > this.bestDailyToday) { this.bestDailyToday = this.score; saveBest(bestKey, this.score); }
-      else if (this.modeType === 'timed' && this.score > this.bestTimed) { this.bestTimed = this.score; saveBest(bestKey, this.score); }
-      else if (this.modeType === 'survival' && this.score > this.bestSurvival) { this.bestSurvival = this.score; saveBest(bestKey, this.score); }
+      const today = todayStr();
+      if (this.modeType === 'free' && this.score > this.bestFree.score) { this.bestFree = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
+      else if (this.modeType === 'daily' && this.score > this.bestDailyToday.score) { this.bestDailyToday = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
+      else if (this.modeType === 'timed' && this.score > this.bestTimed.score) { this.bestTimed = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
+      else if (this.modeType === 'survival' && this.score > this.bestSurvival.score) { this.bestSurvival = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
     }
 
     this._currentBest = this.getCurrentBest();
@@ -830,11 +849,12 @@ export class Game {
     if (statFalls) statFalls.style.display = this.modeType === 'zen' ? 'flex' : 'none';
 
     if (overLabel) {
-      const labels: Record<GameModeType, string> = {
-        free: 'fim de linha', daily: 'desafio de ' + todayStr().slice(5, 10).replace('-', '/'),
-        timed: 'tempo esgotado!', survival: 'você caiu', zen: 'modo zen',
-      };
-      overLabel.textContent = labels[this.modeType];
+      const base = MODE_GAMEOVER_LABELS[this.modeType];
+      if (this.modeType === 'daily') {
+        overLabel.textContent = 'desafio de ' + todayStr().slice(5, 10).replace('-', '/');
+      } else {
+        overLabel.textContent = base;
+      }
     }
 
     overScreen?.classList.remove('hidden');
@@ -843,11 +863,7 @@ export class Game {
     if (timerHud) timerHud.style.display = 'none';
 
     if (lbTitle2) {
-      const titles: Record<GameModeType, string> = {
-        free: 'Recordes (modo livre)', daily: 'Ranking de hoje',
-        timed: 'Recordes (cronometrado)', survival: 'Recordes (sobrevivência)', zen: '',
-      };
-      lbTitle2.textContent = titles[this.modeType];
+      lbTitle2.textContent = MODE_LB_TITLES[this.modeType];
       lbTitle2.style.display = this.modeType === 'zen' ? 'none' : 'block';
     }
 
@@ -881,14 +897,24 @@ export class Game {
 
   private getCurrentBest(): number {
     switch (this.modeType) {
-      case 'free': return this.bestFree;
-      case 'daily': return this.bestDailyToday;
-      case 'timed': return this.bestTimed;
-      case 'survival': return this.bestSurvival;
+      case 'free': return this.bestFree.score;
+      case 'daily': return this.bestDailyToday.score;
+      case 'timed': return this.bestTimed.score;
+      case 'survival': return this.bestSurvival.score;
       default: return this.score;
     }
   }
 
   get lastRank(): number | null { return this._lastRank; }
   get currentBest(): number { return this._currentBest; }
+
+  /** Expose best scores + dates for the start-screen stats row */
+  getBestScores(): { free: { score: number; date: string | null }; daily: { score: number; date: string | null }; timed: { score: number; date: string | null }; survival: { score: number; date: string | null } } {
+    return {
+      free: this.bestFree,
+      daily: this.bestDailyToday,
+      timed: this.bestTimed,
+      survival: this.bestSurvival,
+    };
+  }
 }

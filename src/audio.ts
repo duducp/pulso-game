@@ -34,6 +34,31 @@ function playTone(freq: number, duration: number, type: OscillatorType, volume =
   }
 }
 
+/** Short burst of noise with exponential decay — for spark/crackle effects */
+function playNoiseBurst(duration: number, volume: number): void {
+  if (!audioCtx || !soundEnabled) return;
+  try {
+    const sampleRate = audioCtx.sampleRate;
+    const length = Math.floor(sampleRate * duration);
+    if (length < 1) return;
+    const buffer = audioCtx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-4 * i / length);
+    }
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+  } catch {
+    // audio not available
+  }
+}
+
 export function soundPulse(): void {
   playTone(520, 0.12, 'sine', 0.12);
 }
@@ -56,6 +81,7 @@ export function soundGameOver(): void {
 
 export function soundNear(): void {
   playTone(800, 0.06, 'sine', 0.06);
+  playNoiseBurst(0.04, 0.04); // subtle spark crackle
 }
 
 export function soundPause(): void {
@@ -80,4 +106,9 @@ export function soundOrbCollect(): void {
 
 export function soundNav(): void {
   playTone(880, 0.04, 'sine', 0.03);
+}
+
+export function soundBounce(): void {
+  playTone(120, 0.08, 'sine', 0.04);
+  playNoiseBurst(0.03, 0.025);
 }

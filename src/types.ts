@@ -47,7 +47,7 @@ export interface Particle {
   vy?: number;
   r: number;
   life: number;
-  type: 'ring' | 'dot' | 'shard' | 'text' | 'powerup' | 'orb';
+  type: 'ring' | 'dot' | 'shard' | 'text' | 'powerup' | 'powerup-ring' | 'orb';
   text?: string;
   /** Color override for power-up particles */
   color?: string;
@@ -124,33 +124,71 @@ export const BREAK_DURATION = 3.2;
 export const STEP = 1 / 120;
 export const TIMED_DURATION = 30;
 export const SURVIVAL_SPEED_MULT = 1.8;
-export const POWERUP_SHIELD_DURATION = 5;
-export const POWERUP_SLOWMO_DURATION = 3;
-export const POWERUP_DOUBLE_DURATION = 5;
-export const POWERUP_SLOWMO_FACTOR = 0.5;
-export const POWERUP_DOUBLE_FACTOR = 2;
-export const POWERUP_MAGNET_DURATION = 5;
-export const MAGNET_ORBS_PER_PASS = 2;
-export const POWERUP_FREEZE_DURATION = 4;
-export const POWERUP_PLATING_DURATION = 3;
-export const POWERUP_AUTOFOCUS_DURATION = 3;
 
-// Which power-ups are available per game mode
-export const POWERUPS_BY_MODE: Record<GameModeType, PowerUpType[]> = {
-  free: ['shield', 'slowmo', 'doublepulse', 'magnet'],
-  daily: ['shield', 'slowmo', 'doublepulse', 'magnet'],
-  timed: ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze'],
-  survival: ['shield', 'slowmo', 'doublepulse', 'magnet', 'plating'],
-  zen: ['shield', 'slowmo', 'doublepulse', 'magnet', 'autofocus'],
+// ─── Mode Data ─────────────────────────────────────────────
+export const MODE_ITEMS: GameModeType[] = ['daily', 'free', 'timed', 'survival', 'zen'];
+
+export const MODE_ICONS: Record<GameModeType, string> = {
+  daily: '⚡',
+  free: '🎯',
+  timed: '⏱️',
+  survival: '☠️',
+  zen: '🧘',
 };
 
-// Spawn weights (higher = more likely)
-export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
-  shield: 35,
-  slowmo: 15,
-  doublepulse: 30,
-  magnet: 20,
-  freeze: 15,
-  plating: 15,
-  autofocus: 15,
+export const MODE_NAMES: Record<GameModeType, string> = {
+  daily: 'Desafio Diário',
+  free: 'Modo Livre',
+  timed: 'Cronometrado',
+  survival: 'Sobrevivência',
+  zen: 'Zen',
 };
+
+export const MODE_LABELS: Record<GameModeType, string> = {
+  free: 'MODO LIVRE',
+  daily: 'DESAFIO DIÁRIO',
+  timed: 'CRONOMETRADO',
+  survival: 'SOBREVIVÊNCIA',
+  zen: 'ZEN',
+};
+
+export const MODE_DESC: Record<GameModeType, string> = {
+  daily: 'O mesmo mapa para todos os jogadores. Apenas um desafio por dia — faça valer cada pulso.',
+  free: 'Sem pressão, sem fim. Apenas você e o ritmo do jogo.',
+  timed: '30 segundos. Seu reflexo contra o tempo. Cada pulso conta.',
+  survival: 'Um erro e acabou. Até onde seus reflexos conseguem te levar?',
+  zen: 'Sem pontuação, sem game over, sem pressa. Apenas o fluxo.',
+};
+
+export const MODE_GLOW: Record<GameModeType, string> = {
+  daily: '255,194,77',
+  free: '77,240,224',
+  timed: '255,92,108',
+  survival: '251,146,60',
+  zen: '167,139,250',
+};
+
+export const MODE_GAMEOVER_LABELS: Record<GameModeType, string> = {
+  free: 'até a próxima',
+  daily: 'desafio encerrado',
+  timed: 'tempo esgotado!',
+  survival: 'você tombou',
+  zen: 'volte sempre',
+};
+
+export const MODE_BEST_KEYS: Record<GameModeType, string> = {
+  free: 'profile:best:free',
+  daily: 'profile:best:daily:',
+  timed: 'profile:best:timed',
+  survival: 'profile:best:survival',
+  zen: '',
+};
+
+export const MODE_LB_TITLES: Record<GameModeType, string> = {
+  free: 'Recordes — Livre',
+  daily: 'Ranking de hoje',
+  timed: 'Recordes — Cronometrado',
+  survival: 'Recordes — Sobrevivência',
+  zen: '',
+};
+

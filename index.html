@@ -13,7 +13,7 @@
   <link rel="preload" as="font" href="https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj4PVksj.woff2" type="font/woff2" crossorigin />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💓</text></svg>" />
   <style>
-    :root{--bg:#090B10;--ink:#E9EDF2;--line:#1B2130;--dim:#7C8AA0;--cyan:#4DF0E0;--gold:#FFC24D;--red:#FF5C6C;--purple:#A78BFA;--orange:#FB923C}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);user-select:none}#wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(9,11,16,0.78);backdrop-filter:blur(6px);padding:20px;overflow-y:auto}.hidden{display:none}h1{font-size:44px;margin:0;letter-spacing:-2px;font-weight:700;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+    :root{--bg:#090B10;--ink:#E9EDF2;--line:#1B2130;--dim:#7C8AA0;--cyan:#4DF0E0;--gold:#FFC24D;--red:#FF5C6C;--purple:#A78BFA;--orange:#FB923C}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);user-select:none}#wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(9,11,16,0.78);backdrop-filter:blur(6px);padding:20px;overflow-y:auto}.hidden{display:none}h1{font-size:44px;margin:0;letter-spacing:-2px;font-weight:700;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}.mode-opt{text-transform:uppercase}.mode-selector{touch-action:pan-y}
   </style>
 </head>
 <body>
@@ -44,15 +44,7 @@
   <div id="breakTag">modo ruptura!</div>
   <div id="powerWrap"><div id="powerBar"></div></div>
   <div id="powerUpTag"></div>
-  <div id="powerUpIndicators">
-    <div class="pu-indicator" data-type="shield">🛡️</div>
-    <div class="pu-indicator" data-type="slowmo">⏱️</div>
-    <div class="pu-indicator" data-type="doublepulse">💥</div>
-    <div class="pu-indicator" data-type="magnet">🧲</div>
-    <div class="pu-indicator" data-type="freeze">❄️</div>
-    <div class="pu-indicator" data-type="plating">🔰</div>
-    <div class="pu-indicator" data-type="autofocus">🎯</div>
-  </div>
+  <div id="powerUpIndicators"></div>
   <div id="flashOverlay"></div>
   <div id="hint">toque para pulsar</div>
 
@@ -61,36 +53,31 @@
     <h1>PULSO</h1>
 
     <div class="mode-center">
-    <div class="mode-selector" role="listbox" aria-label="Selecionar modo">
-      <button type="button" class="mode-opt" data-mode="daily" tabindex="0">
-        <span class="mo-icon">⚡</span>
-        <span class="mo-label">Desafio de hoje</span>
-      </button>
-      <button type="button" class="mode-opt focused" data-mode="free" tabindex="0">
-        <span class="mo-icon">🎯</span>
-        <span class="mo-label">Modo livre</span>
-      </button>
-      <button type="button" class="mode-opt" data-mode="timed" tabindex="0">
-        <span class="mo-icon">⏱</span>
-        <span class="mo-label">Cronometrado</span>
-      </button>
-      <button type="button" class="mode-opt" data-mode="survival" tabindex="0">
-        <span class="mo-icon">☠</span>
-        <span class="mo-label">Sobrevivência</span>
-      </button>
-      <button type="button" class="mode-opt" data-mode="zen" tabindex="0">
-        <span class="mo-icon">🧘</span>
-        <span class="mo-label">Zen</span>
-      </button>
-    </div>
-    <div id="modeDesc">Jogue sem pressão. O ritmo é seu.</div>
+    <div class="mode-selector" role="listbox" aria-label="Selecionar modo"></div>
     <div id="modeDots"></div>
+    <button class="ghost" id="toggleDetails" aria-expanded="false">📋 Detalhes</button>
+    <div class="mode-details" id="modeDetails">
+      <div id="modeDesc">Jogue sem pressão. O ritmo é seu.</div>
+      <div id="modePowerUps"></div>
+    </div>
+    </div>
+
+    <div class="ps-card" id="psCard">
+      <div class="ps-title">MEUS RECORDES</div>
+      <div class="player-stats" id="playerStats" aria-live="polite"></div>
+      <div class="ps-tooltip hidden" id="psTooltip"></div>
     </div>
 
     <div class="lbwrap">
       <div class="lbtitle" id="lbTitle">Ranking de hoje</div>
-      <div id="lbList"><div class="lbempty">carregando...</div></div>
+      <div id="lbList" aria-live="polite"><div class="lbempty">carregando...</div></div>
     </div>
+  </div>
+
+  <!-- ─── Power-up Modal (irmão da startScreen) ─────────── -->
+  <div class="overlay hidden" id="puModal" role="dialog" aria-label="Power-ups">
+    <div id="puCard"></div>
+    <button class="ghost" id="puModalClose" style="margin-top:-4px">Fechar</button>
   </div>
 
   <!-- ─── Game Over Screen ─────────────────────────────── -->
@@ -112,7 +99,7 @@
     <button class="ghost" id="menuBtn" style="margin-top:-4px">🏠 Menu inicial</button>
     <div class="lbwrap">
       <div class="lbtitle" id="lbTitle2">Ranking</div>
-      <div id="lbList2"><div class="lbempty">carregando...</div></div>
+      <div id="lbList2" aria-live="polite"><div class="lbempty">carregando...</div></div>
     </div>
   </div>
 

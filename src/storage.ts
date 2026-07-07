@@ -57,11 +57,37 @@ export function saveName(name: string): void {
 
 export async function loadBest(key: string): Promise<number> {
   const raw = loadVal(key);
-  return raw ? (parseInt(raw, 10) || 0) : 0;
+  if (!raw) return 0;
+  // Try new JSON format first, fall back to plain number
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null && 's' in parsed) {
+      return parsed.s as number;
+    }
+  } catch { /* old format — plain number string */ }
+  return parseInt(raw, 10) || 0;
 }
 
 export function saveBest(key: string, val: number): void {
   saveVal(key, String(val));
+}
+
+/** Load best score with the date it was achieved. Returns { score, date } or { score: 0, date: null }. */
+export async function loadBestRecord(key: string): Promise<{ score: number; date: string | null }> {
+  const raw = loadVal(key);
+  if (!raw) return { score: 0, date: null };
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null && 's' in parsed) {
+      return { score: parsed.s as number, date: (parsed.d as string) ?? null };
+    }
+  } catch { /* old format */ }
+  return { score: parseInt(raw, 10) || 0, date: null };
+}
+
+/** Save best score with the current date. */
+export function saveBestRecord(key: string, score: number, date: string): void {
+  saveVal(key, JSON.stringify({ s: score, d: date }));
 }
 
 export function escapeHtml(s: string): string {
