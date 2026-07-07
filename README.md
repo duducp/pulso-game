@@ -1,5 +1,7 @@
 # 💓 PULSO
 
+[![GitHub Pages](https://img.shields.io/github/deployments/duducp/pulso-game/github-pages?style=flat-square&label=deploy&logo=github&color=4DF0E0)](https://duducp.github.io/pulso-game)
+
 **PULSO** é um jogo de reflexo minimalista. Toque para pulsar e desviar das barreiras. Quanto mais perto você passa, mais pontos ganha.
 
 → [jogue agora](https://pulso.game)
