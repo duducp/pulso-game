@@ -4,6 +4,18 @@ export type GameMode = 'menu' | 'playing' | 'paused' | 'over';
 /** The type of gameplay variant. */
 export type GameModeType = 'free' | 'daily' | 'timed' | 'survival' | 'zen';
 
+// ─── Power Ups ─────────────────────────────────────────────
+export type PowerUpType = 'shield' | 'slowmo' | 'doublepulse' | 'magnet';
+
+export interface PowerUp {
+  x: number;
+  y: number;
+  type: PowerUpType;
+  collected: boolean;
+  /** Visual bob phase */
+  phase: number;
+}
+
 // ─── Core Game Objects ─────────────────────────────────────
 export interface Player {
   x: number;
@@ -35,8 +47,10 @@ export interface Particle {
   vy?: number;
   r: number;
   life: number;
-  type: 'ring' | 'dot' | 'shard' | 'text';
+  type: 'ring' | 'dot' | 'shard' | 'text' | 'powerup' | 'orb';
   text?: string;
+  /** Color override for power-up particles */
+  color?: string;
 }
 
 // ─── Leaderboard ───────────────────────────────────────────
@@ -52,6 +66,7 @@ export interface GameState {
   modeType: GameModeType;
   player: Player;
   obstacles: Obstacle[];
+  powerUps: PowerUp[];
   particles: Particle[];
   trail: TrailPoint[];
   score: number;
@@ -75,6 +90,10 @@ export interface GameState {
   soundEnabled: boolean;
   timeRemaining: number;
   zenFalls: number;
+  activePowerUp: PowerUpType | null;
+  powerUpTimer: number;
+  slowmoMultiplier: number;
+  scoreMultiplier: number;
   W: number;
   H: number;
 }
@@ -90,11 +109,31 @@ export const COLORS = {
   bg: '#090B10',
   purple: '#A78BFA',
   orange: '#FB923C',
+  shield: '#5BBAFF',
+  slowmo: '#BB86FC',
+  doublepulse: '#FF6B9D',
+  magnet: '#FFD700',
 } as const;
 
 export const POWER_PASS = 16;
 export const POWER_NEAR = 30;
 export const BREAK_DURATION = 3.2;
 export const STEP = 1 / 120;
-export const TIMED_DURATION = 30; // seconds
+export const TIMED_DURATION = 30;
 export const SURVIVAL_SPEED_MULT = 1.8;
+export const POWERUP_SHIELD_DURATION = 5;
+export const POWERUP_SLOWMO_DURATION = 3;
+export const POWERUP_DOUBLE_DURATION = 5;
+export const POWERUP_SLOWMO_FACTOR = 0.5;
+export const POWERUP_DOUBLE_FACTOR = 2;
+export const POWERUP_MAGNET_DURATION = 5;
+export const MAGNET_ORBS_PER_PASS = 2;
+
+// Spawn weights (higher = more likely)
+export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
+  shield: 35,
+  slowmo: 15,
+  doublepulse: 30,
+  magnet: 20,
+};
+export const POWERUP_WEIGHT_TOTAL = 35 + 15 + 30 + 20;

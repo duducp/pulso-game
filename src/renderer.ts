@@ -1,4 +1,4 @@
-import type { GameState } from './types';
+import type { GameState, PowerUpType } from './types';
 import { COLORS } from './types';
 
 export class Renderer {
@@ -94,6 +94,32 @@ export class Renderer {
       ctx.shadowBlur = 0;
     }
 
+    // Power-ups
+    const powerUpIcons: Record<PowerUpType, string> = { shield: '🛡️', slowmo: '⏱️', doublepulse: '💥', magnet: '🧲' };
+    const powerUpColors: Record<PowerUpType, string> = { shield: COLORS.shield, slowmo: COLORS.slowmo, doublepulse: COLORS.doublepulse, magnet: COLORS.magnet };
+    for (const pu of s.powerUps) {
+      if (pu.collected) continue;
+      const bob = Math.sin(pu.phase * 3) * 4;
+      const color = powerUpColors[pu.type];
+
+      // Glow
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.15 + Math.sin(pu.phase * 4) * 0.08;
+      ctx.beginPath();
+      ctx.arc(pu.x, pu.y + bob, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+
+      // Icon
+      ctx.font = '22px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(powerUpIcons[pu.type], pu.x, pu.y + bob + 1);
+    }
+
     // Particles
     for (const p of s.particles) {
       ctx.globalAlpha = Math.max(p.life, 0);
@@ -121,6 +147,33 @@ export class Renderer {
           ctx.shadowColor = COLORS.gold;
           ctx.shadowBlur = 16;
           ctx.fillText(p.text ?? '', p.x, p.y);
+          ctx.shadowBlur = 0;
+          break;
+        case 'powerup':
+          ctx.fillStyle = p.color ?? COLORS.cyan;
+          ctx.shadowColor = p.color ?? COLORS.cyan;
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          break;
+        case 'orb':
+          ctx.fillStyle = COLORS.magnet;
+          ctx.shadowColor = COLORS.magnet;
+          ctx.shadowBlur = 18;
+          ctx.globalAlpha = Math.min(p.life, 1) * 0.9;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          // Inner glow
+          ctx.fillStyle = '#FFF8DC';
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = Math.min(p.life, 1) * 0.5;
+          ctx.beginPath();
+          ctx.arc(p.x - 1, p.y - 1, p.r * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
           ctx.shadowBlur = 0;
           break;
       }

@@ -67,3 +67,13 @@ export function soundUnpause(): void {
   playTone(350, 0.1, 'sine', 0.03);
   setTimeout(() => playTone(420, 0.15, 'sine', 0.04), 60);
 }
+
+export function soundPowerUp(): void {
+  playTone(600, 0.08, 'sine', 0.08);
+  setTimeout(() => playTone(800, 0.08, 'sine', 0.08), 80);
+  setTimeout(() => playTone(1000, 0.1, 'sine', 0.07), 160);
+}
+
+export function soundOrbCollect(): void {
+  playTone(1200, 0.06, 'sine', 0.04);
+}

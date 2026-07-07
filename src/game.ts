@@ -1,7 +1,12 @@
-import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, GameState } from './types';
+import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, GameState, PowerUp, PowerUpType } from './types';
 import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION, STEP,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
+  POWERUP_SHIELD_DURATION,
+  POWERUP_SLOWMO_DURATION, POWERUP_DOUBLE_DURATION,
+  POWERUP_SLOWMO_FACTOR, POWERUP_DOUBLE_FACTOR,
+  POWERUP_MAGNET_DURATION, MAGNET_ORBS_PER_PASS,
+  POWERUP_WEIGHTS, POWERUP_WEIGHT_TOTAL,
 } from './types';
 import { xmur3, mulberry32, todayStr } from './rng';
 import {
@@ -11,6 +16,8 @@ import {
   spawnRecordBurst,
   spawnBreakBurst,
   spawnNearText,
+  spawnPowerUpCollect,
+  spawnMagnetOrbs,
   updateParticles,
 } from './particles';
 import {
@@ -21,17 +28,27 @@ import {
   soundNear,
   soundPause,
   soundUnpause,
+  soundPowerUp,
+  soundOrbCollect,
   isSoundEnabled,
 } from './audio';
 import { submitScore, loadBest, saveBest } from './storage';
 import { renderLBInto } from './ui';
 
+const POWERUP_ICONS: Record<PowerUpType, string> = {
+  shield: '🛡️',
+  slowmo: '⏱️',
+  doublepulse: '💥',
+  magnet: '🧲',
+};
+
 export class Game {
-  // ─── Public state (read by renderer & UI) ────────────────
+  // ─── Public state ────────────────────────────────────────
   mode: GameMode = 'menu';
   modeType: GameModeType = 'free';
   player!: Player;
   obstacles: Obstacle[] = [];
+  powerUps: PowerUp[] = [];
   particles: Particle[] = [];
   trail: TrailPoint[] = [];
   score = 0;
@@ -54,6 +71,10 @@ export class Game {
   paused = false;
   timeRemaining = 0;
   zenFalls = 0;
+  activePowerUp: PowerUpType | null = null;
+  powerUpTimer = 0;
+  slowmoMultiplier = 1;
+  scoreMultiplier = 1;
 
   W: number;
   H: number;
@@ -80,6 +101,8 @@ export class Game {
   private modeTagEl: HTMLElement | null = null;
   private hintEl: HTMLElement | null = null;
   private timerEl: HTMLElement | null = null;
+  private powerUpTagEl: HTMLElement | null = null;
+  private powerUpIndicatorEls: NodeListOf<Element> | null = null;
 
   onGameOver?: () => void;
 
@@ -104,6 +127,8 @@ export class Game {
     this.modeTagEl = document.getElementById('modeTag');
     this.hintEl = document.getElementById('hint');
     this.timerEl = document.getElementById('timerVal');
+    this.powerUpTagEl = document.getElementById('powerUpTag');
+    this.powerUpIndicatorEls = document.querySelectorAll('.pu-indicator');
   }
 
   setDimensions(W: number, H: number): void {
@@ -111,13 +136,13 @@ export class Game {
     this.H = H;
   }
 
-  /** Snapshot for the renderer */
   getState(): GameState {
     return {
       mode: this.mode,
       modeType: this.modeType,
       player: this.player,
       obstacles: this.obstacles,
+      powerUps: this.powerUps,
       particles: this.particles,
       trail: this.trail,
       score: this.score,
@@ -141,6 +166,10 @@ export class Game {
       soundEnabled: isSoundEnabled(),
       timeRemaining: this.timeRemaining,
       zenFalls: this.zenFalls,
+      activePowerUp: this.activePowerUp,
+      powerUpTimer: this.powerUpTimer,
+      slowmoMultiplier: this.slowmoMultiplier,
+      scoreMultiplier: this.scoreMultiplier,
       W: this.W,
       H: this.H,
     };
@@ -149,6 +178,7 @@ export class Game {
   reset(): void {
     this.player = { x: this.W * 0.28, y: this.H / 2, vy: 0, r: 13, rot: 0 };
     this.obstacles = [];
+    this.powerUps = [];
     this.particles = [];
     this.score = 0;
     this.nearCount = 0;
@@ -168,6 +198,10 @@ export class Game {
     this.trail = [];
     this.isGameOver = false;
     this.zenFalls = 0;
+    this.activePowerUp = null;
+    this.powerUpTimer = 0;
+    this.slowmoMultiplier = 1;
+    this.scoreMultiplier = 1;
 
     this.powerWrapEl?.classList.remove('full');
     this.breakTagEl?.classList.remove('show');
@@ -176,11 +210,13 @@ export class Game {
     this.comboTagEl?.classList.remove('show');
     if (this.comboTagEl) this.comboTagEl.textContent = '';
     this.flashOverlayEl?.classList.remove('flash');
+    if (this.powerUpTagEl) {
+      this.powerUpTagEl.style.display = 'none';
+    }
+    this.updatePowerUpIndicators();
 
-    // Show/hide timer HUD
     const timerHud = document.getElementById('timerHud');
     if (timerHud) timerHud.style.display = 'none';
-    // Show hint for non-zen modes
     if (this.hintEl) this.hintEl.style.opacity = this.modeType === 'zen' ? '0' : '1';
 
     if (this.dailyMode) {
@@ -227,21 +263,13 @@ export class Game {
   }
 
   getLBKey(): string {
-    const keys: Record<GameModeType, string> = {
-      free: 'lb:free',
-      daily: 'lb:daily:' + todayStr(),
-      timed: 'lb:timed',
-      survival: 'lb:survival',
-      zen: '',
-    };
-    return keys[this.modeType];
+    return this.getBestKey().replace('profile:best:', 'lb:');
   }
 
   beginRun(mode: GameModeType): void {
     this.modeType = mode;
     this.dailyMode = mode === 'daily';
 
-    // Load best for this mode
     if (mode === 'free') this.targetBest = this.bestFree;
     else if (mode === 'daily') this.targetBest = this.bestDailyToday;
     else if (mode === 'timed') this.targetBest = this.bestTimed;
@@ -250,7 +278,6 @@ export class Game {
 
     this.timeRemaining = mode === 'timed' ? TIMED_DURATION : 0;
     this.reset();
-
     this.mode = 'playing';
 
     const startScreen = document.getElementById('startScreen');
@@ -261,11 +288,8 @@ export class Game {
     if (this.modeTagEl) this.modeTagEl.textContent = this.getModeLabel();
     if (this.bestValEl) this.bestValEl.textContent = String(this.targetBest);
 
-    // Show timer for timed mode
     const timerHud = document.getElementById('timerHud');
-    if (timerHud) {
-      timerHud.style.display = mode === 'timed' ? 'block' : 'none';
-    }
+    if (timerHud) timerHud.style.display = mode === 'timed' ? 'block' : 'none';
 
     if (this.recordPaceEl) {
       if (mode === 'zen') {
@@ -314,12 +338,112 @@ export class Game {
     spawnDots(this.particles, this.player.x, this.player.y, 6, 90);
   }
 
+  private spawnPowerUp(gapCenterY: number): void {
+    // Weighted random selection
+    const types: PowerUpType[] = ['shield', 'slowmo', 'doublepulse', 'magnet'];
+    let roll = this.rng() * POWERUP_WEIGHT_TOTAL;
+    let type: PowerUpType = 'shield';
+    for (const t of types) {
+      roll -= POWERUP_WEIGHTS[t];
+      if (roll <= 0) { type = t; break; }
+    }
+    // Position within the obstacle gap, with variance for difficulty
+    const variance = this.gapSize * 0.35;
+    const y = gapCenterY + (this.rng() - 0.5) * variance;
+    this.powerUps.push({
+      x: this.W + 40,
+      y,
+      type,
+      collected: false,
+      phase: this.tick,
+    });
+  }
+
+  private collectPowerUp(pu: PowerUp): void {
+    if (pu.collected) return;
+    pu.collected = true;
+    soundPowerUp();
+    spawnPowerUpCollect(this.particles, pu.x, pu.y, pu.type);
+
+    // Visual flash based on type
+    const color = pu.type === 'shield' ? '93,186,255' : pu.type === 'slowmo' ? '187,134,252' : '255,107,157';
+    const fel = this.flashOverlayEl;
+    if (fel) {
+      fel.style.background = `rgba(${color},0.2)`;
+      fel.classList.add('flash');
+      setTimeout(() => {
+        fel.classList.remove('flash');
+        fel.style.background = 'rgba(255,194,77,0.15)';
+      }, 200);
+    }
+
+    switch (pu.type) {
+      case 'shield':
+        this.activePowerUp = 'shield';
+        this.powerUpTimer = POWERUP_SHIELD_DURATION;
+        break;
+      case 'slowmo':
+        this.activePowerUp = 'slowmo';
+        this.powerUpTimer = POWERUP_SLOWMO_DURATION;
+        this.slowmoMultiplier = POWERUP_SLOWMO_FACTOR;
+        break;
+      case 'doublepulse':
+        this.activePowerUp = 'doublepulse';
+        this.powerUpTimer = POWERUP_DOUBLE_DURATION;
+        this.scoreMultiplier = POWERUP_DOUBLE_FACTOR;
+        break;
+      case 'magnet':
+        this.activePowerUp = 'magnet';
+        this.powerUpTimer = POWERUP_MAGNET_DURATION;
+        break;
+    }
+
+    // Update power-up HUD
+    if (this.powerUpTagEl) {
+      this.powerUpTagEl.style.display = 'flex';
+      this.powerUpTagEl.innerHTML = `${POWERUP_ICONS[pu.type]} <span>${Math.ceil(this.powerUpTimer)}</span>`;
+    }
+    this.updatePowerUpIndicators();
+  }
+
+  private updatePowerUpIndicators(): void {
+    if (!this.powerUpIndicatorEls) return;
+    for (const el of this.powerUpIndicatorEls) {
+      const type = el.getAttribute('data-type');
+      el.classList.toggle('active', type === this.activePowerUp);
+    }
+  }
+
   update(dt: number): void {
     if (this.paused) return;
     this.tick += dt;
 
+    // ── Power-up timer ──
+    if (this.activePowerUp && this.powerUpTimer > 0) {
+      this.powerUpTimer -= dt;
+      if (this.powerUpTagEl) {
+        const span = this.powerUpTagEl.querySelector('span');
+        if (span) span.textContent = String(Math.ceil(this.powerUpTimer));
+      }
+      if (this.powerUpTimer <= 0) {
+        this.activePowerUp = null;
+        this.powerUpTimer = 0;
+        this.slowmoMultiplier = 1;
+        this.scoreMultiplier = 1;
+        if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
+        this.updatePowerUpIndicators();
+        // Clean up any remaining magnet orbs
+        this.particles = this.particles.filter(p => p.type !== 'orb');
+      }
+    }
+
+    // ── SlowMo recovery (return speed gradually) ──
+    if (this.slowmoMultiplier < 1) {
+      this.slowmoMultiplier = Math.min(1, this.slowmoMultiplier + dt * 0.5);
+    }
+
     // ── Difficulty scaling ──
-    const speedMult = this.modeType === 'survival' ? SURVIVAL_SPEED_MULT : 1;
+    const speedMult = (this.modeType === 'survival' ? SURVIVAL_SPEED_MULT : 1) * this.slowmoMultiplier;
     const scoreFactor = this.modeType === 'survival' ? this.score * this.W * 0.018 : this.score * this.W * 0.010;
     this.speed = (this.W * 0.34 + scoreFactor) * speedMult;
     this.gapSize = Math.max(this.H * 0.30 - this.score * 3.2 * speedMult, this.H * 0.20);
@@ -331,33 +455,49 @@ export class Game {
     // ── Timed mode countdown ──
     if (this.modeType === 'timed') {
       this.timeRemaining -= dt;
-      if (this.timerEl) {
-        this.timerEl.textContent = String(Math.ceil(this.timeRemaining));
-      }
-      if (this.timeRemaining <= 0) {
-        this.endGame();
-        return;
-      }
+      if (this.timerEl) this.timerEl.textContent = String(Math.ceil(this.timeRemaining));
+      if (this.timeRemaining <= 0) { this.endGame(); return; }
     }
 
-    // ── Spawn ──
+    // ── Spawn obstacles + power-ups ──
     const interval = Math.max(1.5 - this.score * 0.02, 0.9);
     if (this.tick - this.lastSpawn > interval) {
       this.lastSpawn = this.tick;
-      this.spawnObstacle();
+      const gapInfo = this.spawnObstacle();
+      // Spawn power-up inside the obstacle's gap — chance scales with score/difficulty
+      const spawnChance = Math.min(0.50, 0.15 + this.score * 0.005);
+      if (this.rng() < spawnChance) {
+        this.spawnPowerUp(gapInfo.gapY + gapInfo.gapH / 2);
+      }
+    }
+
+    // ── Power-ups movement ──
+    for (const pu of this.powerUps) {
+      if (!pu.collected) {
+        pu.x -= this.speed * STEP;
+        pu.phase += dt;
+      }
+    }
+    this.powerUps = this.powerUps.filter(p => p.x > -40 && !p.collected);
+
+    // ── Power-up collection ──
+    for (const pu of this.powerUps) {
+      if (pu.collected) continue;
+      const dx = this.player.x - pu.x;
+      const dy = this.player.y - pu.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < this.player.r + 16) {
+        this.collectPowerUp(pu);
+      }
     }
 
     // ── Player physics ──
     this.player.vy += this.H * 1.55 * dt;
     this.player.y += this.player.vy * dt;
     this.player.rot = Math.max(-0.5, Math.min(1.1, this.player.vy / 900));
-    if (this.player.y - this.player.r < 0) {
-      this.player.y = this.player.r;
-      this.player.vy = 0;
-    }
+    if (this.player.y - this.player.r < 0) { this.player.y = this.player.r; this.player.vy = 0; }
     if (this.player.y + this.player.r > this.H) {
       if (this.modeType === 'zen') {
-        // Zen: bounce back instead of dying
         this.player.y = this.H - this.player.r;
         this.player.vy = -this.H * 0.4;
         this.zenFalls++;
@@ -379,25 +519,52 @@ export class Game {
     }
     if (this.shakeTime > 0) this.shakeTime -= dt;
 
-    // ── Trail ──
     this.trail.push({ x: this.player.x, y: this.player.y });
     if (this.trail.length > 12) this.trail.shift();
 
-    // ── Obstacle collision ──
     this.updateObstacles();
 
-    // ── Power bar ──
     if (this.powerBarEl) this.powerBarEl.style.width = this.power + '%';
 
-    // ── Particles ──
-    updateParticles(this.particles, dt);
-    this.particles = this.particles.filter((p) => p.life > 0);
+    // ── Magnet orbs: attract toward player ──
+    for (const p of this.particles) {
+      if (p.type === 'orb' && this.activePowerUp === 'magnet') {
+        const dx = (this.player.x + 10) - p.x;
+        const dy = this.player.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 5) {
+          const speed = 280 + Math.random() * 40;
+          p.x += (dx / dist) * speed * dt;
+          p.y += (dy / dist) * speed * dt;
+        }
+        // Orb lifetime decreases faster when close to player
+        if (dist < 60) p.life -= dt * 0.8;
+      }
+    }
 
-    // ── HUD: record pace ──
+    // ── Collect orbs that reach the player ──
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      if (p.type === 'orb' && this.activePowerUp === 'magnet') {
+        const dx = (this.player.x + 10) - p.x;
+        const dy = this.player.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < this.player.r + 8) {
+          this.score += 1;
+          if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
+          soundOrbCollect();
+          this.particles.splice(i, 1);
+        }
+      }
+    }
+
+    updateParticles(this.particles, dt);
+    this.particles = this.particles.filter(p => p.life > 0);
+
     this.updateRecordPace();
   }
 
-  private spawnObstacle(): void {
+  private spawnObstacle(): { gapY: number; gapH: number } {
     const margin = this.H * 0.12;
     const gapY = margin + this.rng() * (this.H - margin * 2 - this.gapSize);
     this.obstacles.push({
@@ -408,14 +575,13 @@ export class Game {
       nearCounted: false,
       w: 46,
     });
+    return { gapY, gapH: this.gapSize };
   }
 
   private gainPower(amount: number): void {
     if (this.breakMode) return;
     this.power = Math.min(100, this.power + amount);
-    if (this.power >= 100) {
-      this.activateBreakMode();
-    }
+    if (this.power >= 100) this.activateBreakMode();
   }
 
   private activateBreakMode(): void {
@@ -442,28 +608,28 @@ export class Game {
           this.combo = 0;
           this.comboTagEl?.classList.remove('show');
         }
-        this.score++;
+        const points = Math.floor(1 * this.scoreMultiplier);
+        this.score += points;
         if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
         this.gainPower(POWER_PASS);
         this.checkRecordCrossing();
+        // Magnet: spawn extra orbs when passing obstacles
+        if (this.activePowerUp === 'magnet') {
+          spawnMagnetOrbs(this.particles, o.x + o.w, o.gapY + o.gapH / 2, MAGNET_ORBS_PER_PASS);
+        }
       }
 
-      const withinX =
-        this.player.x + this.player.r > o.x &&
-        this.player.x - this.player.r < o.x + o.w;
-
+      const withinX = this.player.x + this.player.r > o.x && this.player.x - this.player.r < o.x + o.w;
       if (withinX && !o.broken) {
         const topY = o.gapY;
         const botY = o.gapY + o.gapH;
-        const colliding =
-          this.player.y - this.player.r < topY ||
-          this.player.y + this.player.r > botY;
+        const colliding = this.player.y - this.player.r < topY || this.player.y + this.player.r > botY;
 
         if (colliding) {
           if (this.breakMode) {
             if (!o.passed) {
               o.passed = true;
-              this.score += 3;
+              this.score += Math.floor(3 * this.scoreMultiplier);
               this.breakCount++;
               if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
               this.checkRecordCrossing();
@@ -476,8 +642,30 @@ export class Game {
             setTimeout(() => this.flashOverlayEl?.classList.remove('flash'), 80);
             spawnShatter(this.particles, o.x, 0, topY, o.w);
             spawnShatter(this.particles, o.x, botY, this.H, o.w);
+          } else if (this.activePowerUp === 'shield') {
+            // Shield absorbs collision
+            this.activePowerUp = null;
+            this.powerUpTimer = 0;
+            if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
+            this.updatePowerUpIndicators();
+            this.shakeTime = 0.15;
+            soundBreak();
+            if (navigator.vibrate) navigator.vibrate(20);
+            // Visual: blue flash
+            const fel = this.flashOverlayEl;
+            if (fel) {
+              fel.style.background = 'rgba(93,186,255,0.25)';
+              fel.classList.add('flash');
+              setTimeout(() => {
+                fel.classList.remove('flash');
+                fel.style.background = 'rgba(255,194,77,0.15)';
+              }, 150);
+            }
+            spawnShatter(this.particles, o.x, 0, topY, o.w);
+            spawnShatter(this.particles, o.x, botY, this.H, o.w);
+            // Push player back instead of dying
+            this.player.vy = -this.H * 0.3;
           } else if (this.modeType === 'zen') {
-            // Zen: obstacles don't kill — just push player back
             this.player.vy = -this.H * 0.35;
             this.zenFalls++;
           } else {
@@ -495,7 +683,8 @@ export class Game {
             this.combo++;
             if (this.combo > this.maxCombo) this.maxCombo = this.combo;
             const bonus = Math.floor(this.combo * 0.5);
-            this.score += 1 + bonus;
+            const addScore = Math.floor((1 + bonus) * this.scoreMultiplier);
+            this.score += addScore;
             if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
             soundNear();
 
@@ -505,7 +694,6 @@ export class Game {
             } else {
               this.comboTagEl?.classList.remove('show');
             }
-
             spawnNearText(this.particles, this.player.x, this.player.y);
             this.gainPower(POWER_NEAR);
             this.checkRecordCrossing();
@@ -513,10 +701,7 @@ export class Game {
         }
       }
     }
-
-    this.obstacles = this.obstacles.filter(
-      (o) => o.x + o.w > -20 && !o.broken,
-    );
+    this.obstacles = this.obstacles.filter(o => o.x + o.w > -20 && !o.broken);
   }
 
   private checkRecordCrossing(): void {
@@ -538,12 +723,10 @@ export class Game {
     if (this.modeType === 'zen') return;
     if (this.targetBest > 0) {
       if (this.recordCrossed) {
-        this.recordPaceEl.textContent =
-          '+' + (this.score - this.targetBest) + ' recorde!';
+        this.recordPaceEl.textContent = '+' + (this.score - this.targetBest) + ' recorde!';
         this.recordPaceEl.classList.add('ahead');
       } else {
-        this.recordPaceEl.textContent =
-          'faltam ' + (this.targetBest - this.score) + ' pro recorde';
+        this.recordPaceEl.textContent = 'faltam ' + (this.targetBest - this.score) + ' pro recorde';
         this.recordPaceEl.classList.remove('ahead');
       }
     }
@@ -554,33 +737,21 @@ export class Game {
     this.isGameOver = true;
     this.mode = 'over';
 
-    // Zen mode doesn't end naturally — only via quit
     if (this.modeType !== 'zen') {
       soundGameOver();
       if (navigator.vibrate) navigator.vibrate(60);
     }
 
-    // Save best scores
     const bestKey = this.getBestKey();
     if (bestKey) {
-      if (this.modeType === 'free' && this.score > this.bestFree) {
-        this.bestFree = this.score;
-        saveBest(bestKey, this.score);
-      } else if (this.modeType === 'daily' && this.score > this.bestDailyToday) {
-        this.bestDailyToday = this.score;
-        saveBest(bestKey, this.score);
-      } else if (this.modeType === 'timed' && this.score > this.bestTimed) {
-        this.bestTimed = this.score;
-        saveBest(bestKey, this.score);
-      } else if (this.modeType === 'survival' && this.score > this.bestSurvival) {
-        this.bestSurvival = this.score;
-        saveBest(bestKey, this.score);
-      }
+      if (this.modeType === 'free' && this.score > this.bestFree) { this.bestFree = this.score; saveBest(bestKey, this.score); }
+      else if (this.modeType === 'daily' && this.score > this.bestDailyToday) { this.bestDailyToday = this.score; saveBest(bestKey, this.score); }
+      else if (this.modeType === 'timed' && this.score > this.bestTimed) { this.bestTimed = this.score; saveBest(bestKey, this.score); }
+      else if (this.modeType === 'survival' && this.score > this.bestSurvival) { this.bestSurvival = this.score; saveBest(bestKey, this.score); }
     }
 
     this._currentBest = this.getCurrentBest();
 
-    // Update DOM for game-over screen
     const finalScore = document.getElementById('finalScore');
     const finalBest = document.getElementById('finalBest');
     const finalBpm = document.getElementById('finalBpm');
@@ -603,21 +774,16 @@ export class Game {
     if (finalBreaks) finalBreaks.textContent = String(this.breakCount);
     if (finalCombo) finalCombo.textContent = String(this.maxCombo);
     if (this.bestValEl) this.bestValEl.textContent = String(this._currentBest);
-
     if (finalTime) finalTime.textContent = String(Math.round(this.tick));
     if (statFalls) statFalls.textContent = String(this.zenFalls);
 
-    // Show/hide mode-specific stats
     if (statTime) statTime.style.display = this.modeType === 'zen' ? 'flex' : 'none';
     if (statFalls) statFalls.style.display = this.modeType === 'zen' ? 'flex' : 'none';
 
     if (overLabel) {
       const labels: Record<GameModeType, string> = {
-        free: 'fim de linha',
-        daily: 'desafio de ' + todayStr().slice(5, 10).replace('-', '/'),
-        timed: 'tempo esgotado!',
-        survival: 'você caiu',
-        zen: 'modo zen',
+        free: 'fim de linha', daily: 'desafio de ' + todayStr().slice(5, 10).replace('-', '/'),
+        timed: 'tempo esgotado!', survival: 'você caiu', zen: 'modo zen',
       };
       overLabel.textContent = labels[this.modeType];
     }
@@ -627,14 +793,10 @@ export class Game {
     const timerHud = document.getElementById('timerHud');
     if (timerHud) timerHud.style.display = 'none';
 
-    // Leaderboard title
     if (lbTitle2) {
       const titles: Record<GameModeType, string> = {
-        free: 'Recordes (modo livre)',
-        daily: 'Ranking de hoje',
-        timed: 'Recordes (cronometrado)',
-        survival: 'Recordes (sobrevivência)',
-        zen: '',
+        free: 'Recordes (modo livre)', daily: 'Ranking de hoje',
+        timed: 'Recordes (cronometrado)', survival: 'Recordes (sobrevivência)', zen: '',
       };
       lbTitle2.textContent = titles[this.modeType];
       lbTitle2.style.display = this.modeType === 'zen' ? 'none' : 'block';
@@ -643,26 +805,17 @@ export class Game {
     if (rankLine) rankLine.textContent = 'Salvando no ranking...';
     if (lbList2) lbList2.innerHTML = '<div class="lbempty">carregando...</div>';
 
-    // Submit to leaderboard (skip zen)
     if (this.modeType !== 'zen') {
       const key = this.getLBKey();
       const ts = Date.now();
-      const playerName =
-        (document.getElementById('nameInput') as HTMLInputElement)?.value?.trim().toUpperCase().slice(0, 10) ||
-        'JOGADOR';
+      const playerName = (document.getElementById('nameInput') as HTMLInputElement)?.value?.trim().toUpperCase().slice(0, 10) || 'JOGADOR';
       const list = await submitScore(key, { n: playerName, s: this.score, t: ts });
-
       if (list) {
         renderLBInto(lbList2!, list, ts);
         const lbList = document.getElementById('lbList');
         if (lbList) renderLBInto(lbList, list, ts);
-        const idx = list.findIndex((e) => e.t === ts);
-        if (rankLine) {
-          rankLine.textContent =
-            idx >= 0
-              ? 'Você ficou em #' + (idx + 1) + ' no ranking!'
-              : 'Fora do top 20 — tenta de novo!';
-        }
+        const idx = list.findIndex(e => e.t === ts);
+        if (rankLine) rankLine.textContent = idx >= 0 ? 'Você ficou em #' + (idx + 1) + ' no ranking!' : 'Fora do top 20 — tenta de novo!';
         this._lastRank = idx >= 0 ? idx + 1 : null;
       } else {
         if (rankLine) rankLine.textContent = '';
@@ -670,13 +823,10 @@ export class Game {
         this._lastRank = null;
       }
     } else {
-      if (rankLine) {
-        rankLine.textContent = 'Você jogou por ' + Math.round(this.tick) + ' segundos.';
-      }
+      if (rankLine) rankLine.textContent = 'Você jogou por ' + Math.round(this.tick) + ' segundos.';
       if (lbList2) lbList2.innerHTML = '<div class="lbempty">Modo zen não tem ranking — só diversão.</div>';
       this._lastRank = null;
     }
-
     this.onGameOver?.();
   }
 
@@ -690,11 +840,6 @@ export class Game {
     }
   }
 
-  get lastRank(): number | null {
-    return this._lastRank;
-  }
-
-  get currentBest(): number {
-    return this._currentBest;
-  }
+  get lastRank(): number | null { return this._lastRank; }
+  get currentBest(): number { return this._currentBest; }
 }

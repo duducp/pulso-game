@@ -545,6 +545,68 @@ button:active {
   line-height: 1.2;
 }
 
+/* ─── Power-up Indicators ───────────────────────────────── */
+
+#powerUpIndicators {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 5;
+  background: rgba(9, 11, 16, 0.55);
+  padding: 4px 10px;
+  border-radius: 50px;
+  backdrop-filter: blur(4px);
+}
+
+.pu-indicator {
+  font-size: 16px;
+  opacity: 0.25;
+  filter: grayscale(0.8) brightness(0.5);
+  transition: opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;
+}
+
+.pu-indicator.active {
+  opacity: 1;
+  filter: grayscale(0) brightness(1);
+  transform: scale(1.25);
+}
+
+/* ─── Power-up Tag ──────────────────────────────────────── */
+
+#powerUpTag {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 10;
+  animation: powerUpPulse 0.6s ease-in-out infinite alternate;
+}
+
+#powerUpTag span {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 20px;
+  text-align: center;
+}
+
+@keyframes powerUpPulse {
+  from { transform: translateX(-50%) scale(1); }
+  to { transform: translateX(-50%) scale(1.1); }
+}
+
 /* ─── Toast ─────────────────────────────────────────────── */
 
 #toast {

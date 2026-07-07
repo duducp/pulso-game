@@ -1,4 +1,4 @@
-import type { Particle, Player } from './types';
+import type { Particle, PowerUpType } from './types';
 import { COLORS } from './types';
 
 // ─── Particle spawning ─────────────────────────────────────
@@ -84,6 +84,47 @@ export function spawnBreakBurst(particles: Particle[], px: number, py: number): 
   }
 }
 
+export function spawnPowerUpCollect(particles: Particle[], px: number, py: number, type: PowerUpType): void {
+  const color = type === 'shield' ? COLORS.shield : type === 'slowmo' ? COLORS.slowmo : COLORS.doublepulse;
+  for (let i = 0; i < 20; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 60 + Math.random() * 140;
+    particles.push({
+      x: px,
+      y: py,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      r: 3 + Math.random() * 4,
+      life: 1,
+      type: 'powerup',
+      color,
+    });
+  }
+}
+
+/** Spawn orbs that fly toward the player (magnet power-up) */
+export function spawnMagnetOrbs(
+  particles: Particle[],
+  obstacleX: number,
+  gapCenterY: number,
+  count: number,
+): void {
+  for (let i = 0; i < count; i++) {
+    const offsetX = 10 + Math.random() * 20;
+    const offsetY = (Math.random() - 0.5) * 40;
+    particles.push({
+      x: obstacleX + offsetX,
+      y: gapCenterY + offsetY,
+      vx: 0,
+      vy: 0,
+      r: 5 + Math.random() * 3,
+      life: 2,
+      type: 'orb',
+      color: COLORS.magnet,
+    });
+  }
+}
+
 export function spawnNearText(particles: Particle[], px: number, py: number): void {
   particles.push({
     x: px + 20,
@@ -115,6 +156,11 @@ export function updateParticles(particles: Particle[], dt: number): void {
         break;
       case 'text':
         p.y -= dt * 40;
+        break;
+      case 'orb':
+        // orbs are moved externally by game logic (magnet attraction)
+        // decay life so they expire if not collected
+        p.life -= dt * 0.15;
         break;
     }
   }
