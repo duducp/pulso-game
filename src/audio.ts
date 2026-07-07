@@ -112,3 +112,9 @@ export function soundBounce(): void {
   playTone(120, 0.08, 'sine', 0.04);
   playNoiseBurst(0.03, 0.025);
 }
+
+/** Urgent warning beep — played when break mode is about to expire */
+export function soundUrgent(): void {
+  playTone(880, 0.08, 'square', 0.06);
+  setTimeout(() => playTone(660, 0.1, 'square', 0.05), 100);
+}

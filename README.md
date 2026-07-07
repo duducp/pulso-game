@@ -40,17 +40,32 @@ make preview
 
 ```
 ├── index.html              # HTML principal
+├── public/
+│   ├── manifest.json       # PWA manifest
+│   ├── sw.js               # service worker (offline)
+│   ├── icon-192.svg        # PWA ícone 192x192
+│   └── icon-512.svg        # PWA ícone 512x512
 ├── src/
 │   ├── main.ts             # entry point — orquestra sistemas
-│   ├── types.ts            # interfaces, tipos, constantes
+│   ├── types.ts            # interfaces e tipos
+│   ├── constants.ts        # constantes do jogo
+│   ├── modes.ts            # dados dos modos (labels, descrições, cores)
 │   ├── game.ts             # lógica do jogo (classe Game)
+│   ├── physics.ts          # helpers de física (gravidade, movimento)
+│   ├── hud.ts              # gerenciamento DOM do HUD
 │   ├── renderer.ts         # renderização Canvas (classe Renderer)
 │   ├── particles.ts        # sistema de partículas
 │   ├── audio.ts            # sons via Web Audio API
 │   ├── storage.ts          # localStorage (ranking + progresso)
-│   ├── ui.ts               # manipulação DOM, leaderboard, share
-│   ├── input.ts            # eventos touch / teclado
+│   ├── ui.ts               # leaderboard DOM, share text
+│   ├── input.ts            # eventos touch / teclado + helper onSwipe
 │   ├── rng.ts              # RNG com seed (modo diário)
+│   ├── powerups.ts         # dados e constantes de power-ups
+│   ├── startScreen.ts      # tela inicial (carrossel + stats)
+│   ├── carousel.ts         # carrossel de seleção de modo
+│   ├── puModal.ts          # modal de detalhes dos power-ups
+│   ├── pauseScreen.ts      # tela de pausa
+│   ├── gameOverScreen.ts   # tela de fim de jogo + stats
 │   └── style.css           # estilos
 ├── package.json
 ├── tsconfig.json

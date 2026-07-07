@@ -101,19 +101,27 @@ export class Renderer {
       const bob = Math.sin(pu.phase * 3) * 4;
       const color = POWERUP_RENDER_COLORS[pu.type];
 
-      // Glow
+      // Outer glow ring
       ctx.shadowColor = color;
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 24;
       ctx.fillStyle = color;
-      ctx.globalAlpha = 0.15 + Math.sin(pu.phase * 4) * 0.08;
+      ctx.globalAlpha = 0.12 + Math.sin(pu.phase * 4) * 0.06;
       ctx.beginPath();
-      ctx.arc(pu.x, pu.y + bob, 22, 0, Math.PI * 2);
+      ctx.arc(pu.x, pu.y + bob, 28, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
 
+      // Inner opaque background disc (ensures emoji never bleeds)
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath();
+      ctx.arc(pu.x, pu.y + bob, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
       // Icon (Noto Color Emoji for consistent cross-platform rendering)
-      ctx.font = '22px "Noto Color Emoji", sans-serif';
+      ctx.font = '21px "Noto Color Emoji", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob + 1);

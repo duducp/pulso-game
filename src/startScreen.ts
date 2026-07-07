@@ -1,23 +1,17 @@
-import { initAudio, soundNav } from './audio';
-import { MODE_ITEMS, MODE_ICONS, MODE_NAMES, MODE_GLOW, MODE_DESC } from './modes';
-import { POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
+import { initAudio } from './audio';
+import { MODE_ITEMS, MODE_NAMES } from './modes';
+import { POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
 import { saveName } from './storage';
-import { onSwipe } from './input';
 import { initPuModal } from './puModal';
+import { initCarousel, focusMode, selectedIdx, setSelectedIdx } from './carousel';
 import type { Game } from './game';
 
 // ─── Shared state (exported for main.ts) ─────────────────
-export let selectedIdx = 1;
 export let savedName = '';
 export let touchSwiped = false;
 
-export function setSelectedIdx(v: number): void { selectedIdx = v; }
 export function setSavedName(v: string): void { savedName = v; }
 export function setTouchSwiped(v: boolean): void { touchSwiped = v; }
-
-// ─── Mode selector constants ────────────────────────────
-const ITEM_W = 200;
-const PEEK = 80;
 
 // ─── Friendly date formatting ───────────────────────────────
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -66,69 +60,6 @@ export function updatePlayerStats(game: Game): void {
       })
       .join('');
   }
-}
-
-// ─── Mode carousel ────────────────────────────────────────
-export function focusMode(idx: number, game: Game): void {
-  if (idx !== selectedIdx) {
-    initAudio();
-    soundNav();
-  }
-  const opts = document.querySelectorAll('.mode-opt');
-  const container = document.querySelector('.mode-selector') as HTMLElement;
-  const cw = container.offsetWidth;
-
-  opts.forEach((el, i) => {
-    const elH = el as HTMLElement;
-    const offset = i - idx;
-    let tx: number;
-    if (offset === 0) {
-      tx = 0;
-    } else if (offset === -1) {
-      tx = PEEK - ITEM_W / 2 - cw / 2;
-    } else if (offset === 1) {
-      tx = cw / 2 - PEEK + ITEM_W / 2;
-    } else if (offset < -1) {
-      tx = -ITEM_W * 2;
-    } else {
-      tx = ITEM_W * 2;
-    }
-    elH.style.transform = `translate(-50%, -50%) translateX(${tx}px) scale(${offset === 0 ? 1 : 0.82})`;
-    elH.style.opacity = String(Math.abs(offset) <= 1 ? (offset === 0 ? 1 : 0.30) : 0);
-    elH.style.pointerEvents = Math.abs(offset) <= 1 ? 'auto' : 'none';
-    el.classList.toggle('focused', i === idx);
-    elH.style.boxShadow = '';
-  });
-  selectedIdx = idx;
-  const mode = MODE_ITEMS[idx];
-  const rgb = MODE_GLOW[mode];
-  // Update description
-  const descEl = document.getElementById('modeDesc');
-  if (descEl) {
-    descEl.style.setProperty('--mode-rgb', rgb);
-    descEl.style.opacity = '0';
-    descEl.style.transform = 'translateY(6px)';
-    requestAnimationFrame(() => {
-      descEl.innerHTML = `<span class="desc-icon">${MODE_ICONS[mode]}</span>${MODE_DESC[mode] ?? ''}`;
-      descEl.style.opacity = '1';
-      descEl.style.transform = 'translateY(0)';
-    });
-  }
-  // Update dots
-  const dots = document.querySelectorAll('.mdot');
-  dots.forEach((d, i) => {
-    d.classList.toggle('active', i === idx);
-    (d as HTMLElement).style.background = i === idx ? `rgb(${rgb})` : '';
-  });
-  // Update power-ups color + active state
-  const puContainer = document.getElementById('modePowerUps');
-  if (puContainer) puContainer.style.setProperty('--mode-rgb', rgb);
-  const pwrTypes = POWERUPS_BY_MODE[mode];
-  const mpIcons = document.querySelectorAll('.mp-icon');
-  mpIcons.forEach((el) => {
-    const type = (el as HTMLElement).dataset.puType;
-    el.classList.toggle('active', type ? pwrTypes.includes(type as any) : false);
-  });
 }
 
 function startSelectedMode(game: Game, startLoop: () => void, startScreen: HTMLElement): void {
@@ -255,52 +186,6 @@ export function initStartScreen(
     }
   });
 
-  // ── Wheel / scroll ──
-  modeSelector.addEventListener('wheel', (e: Event) => {
-    const we = e as WheelEvent;
-    e.preventDefault();
-    if (we.deltaY > 0 || we.deltaX > 0) {
-      focusMode(Math.min(MODE_ITEMS.length - 1, selectedIdx + 1), game);
-    } else if (we.deltaY < 0 || we.deltaX < 0) {
-      focusMode(Math.max(0, selectedIdx - 1), game);
-    }
-  }, { passive: false });
-
-  // ── Touch swipe on selector ──
-  onSwipe(
-    modeSelector as HTMLElement,
-    () => { touchSwiped = true; focusMode(Math.min(MODE_ITEMS.length - 1, selectedIdx + 1), game); },
-    () => { touchSwiped = true; focusMode(Math.max(0, selectedIdx - 1), game); },
-    30,
-    () => { touchSwiped = false; },
-  );
-
-  // ── Build carousel buttons ──
-  MODE_ITEMS.forEach((mode, i) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mode-opt' + (i === selectedIdx ? ' focused' : '');
-    btn.dataset.mode = mode;
-    btn.tabIndex = 0;
-    btn.style.setProperty('--mode-rgb', MODE_GLOW[mode]);
-    btn.innerHTML = `<span class="mo-icon">${MODE_ICONS[mode]}</span><span class="mo-label">${MODE_NAMES[mode]}</span>`;
-    btn.addEventListener('click', () => {
-      if (touchSwiped) { touchSwiped = false; return; }
-      focusMode(i, game);
-      startSelectedMode(game, startLoop, startScreen);
-    });
-    modeSelector.appendChild(btn);
-  });
-
-  // ── Build dots ──
-  if (dotsEl) {
-    MODE_ITEMS.forEach(() => {
-      const dot = document.createElement('span');
-      dot.className = 'mdot';
-      dotsEl.appendChild(dot);
-    });
-  }
-
   // ── Build power-up icons ──
   if (puEl) {
     const allPwuTypes: Array<keyof typeof POWERUP_ICONS> = ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
@@ -317,21 +202,11 @@ export function initStartScreen(
     });
   }
 
+  // ── Init carousel (build buttons + dots + wheel/swipe + initial paint) ──
+  initCarousel(modeSelector, dotsEl, game, startLoop, startScreen, (v) => { touchSwiped = v; });
+
   // ── Power-up modal (extracted to puModal.ts) ──
   initPuModal(startScreen, () => MODE_ITEMS[selectedIdx]);
-
-  // ── Initial paint: suppress transitions ──
-  const modeOptsAll = document.querySelectorAll<HTMLElement>('.mode-opt');
-  modeOptsAll.forEach(el => el.style.transition = 'none');
-  const modeDescInit = document.getElementById('modeDesc');
-  if (modeDescInit) modeDescInit.style.transition = 'none';
-  focusMode(selectedIdx, game);
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      modeOptsAll.forEach(el => el.style.transition = '');
-      if (modeDescInit) modeDescInit.style.transition = '';
-    });
-  });
 
   return { startScreen };
 }

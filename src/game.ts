@@ -36,6 +36,7 @@ import {
   soundPowerUp,
   soundOrbCollect,
   soundBounce,
+  soundUrgent,
   isSoundEnabled,
 } from './audio';
 import { submitScore, loadBestRecord, saveBestRecord } from './storage';
@@ -95,6 +96,8 @@ export class Game {
   private bestSurvival: { score: number; date: string | null } = { score: 0, date: null };
   private _lastRank: number | null = null;
   private _currentBest = 0;
+  /** Whether the urgent beep has been played for the current break mode */
+  private _urgentPlayed = false;
 
   onGameOver?: () => void;
 
@@ -180,6 +183,7 @@ export class Game {
 
     // HUD reset
     this.hud.reset(this.modeType);
+    this._urgentPlayed = false;
 
     if (this.dailyMode) {
       const seedGen = xmur3(todayStr());
@@ -453,10 +457,20 @@ export class Game {
     // ── Break mode ──
     if (this.breakMode) {
       this.breakTimer -= dt;
+      // Power bar drains from 100% → 0% over the break duration
+      this.power = (this.breakTimer / BREAK_DURATION) * 100;
+      // Blink urgently when below 25%
+      const urgent = this.power < 25;
+      this.hud.setPowerBarUrgent(urgent);
+      if (urgent && !this._urgentPlayed) {
+        this._urgentPlayed = true;
+        soundUrgent();
+      }
       if (this.breakTimer <= 0) {
         this.breakMode = false;
         this.power = 0;
         this.hud.setPowerBarFull(false);
+        this.hud.setPowerBarUrgent(false);
         this.hud.hideBreakTag();
       }
     }

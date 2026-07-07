@@ -219,6 +219,15 @@ canvas {
   to { opacity: 0.55; }
 }
 
+#powerWrap.urgent #powerBar {
+  animation: powerUrgent 0.15s ease-in-out infinite alternate;
+}
+
+@keyframes powerUrgent {
+  from { opacity: 1; filter: brightness(1.3); }
+  to   { opacity: 0.3; filter: brightness(0.6); }
+}
+
 #breakTag {
   position: absolute;
   top: 70px;

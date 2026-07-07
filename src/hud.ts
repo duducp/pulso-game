@@ -47,7 +47,7 @@ export class HudManager {
 
   // ─── Reset ────────────────────────────────────────────────
   reset(modeType: string): void {
-    this.powerWrapEl?.classList.remove('full');
+    this.powerWrapEl?.classList.remove('full', 'urgent');
     this.breakTagEl?.classList.remove('show');
     this.recordBannerEl?.classList.remove('show');
     this.scoreValEl?.classList.remove('gold');
@@ -100,6 +100,10 @@ export class HudManager {
 
   setPowerBarFull(full: boolean): void {
     this.powerWrapEl?.classList.toggle('full', full);
+  }
+
+  setPowerBarUrgent(urgent: boolean): void {
+    this.powerWrapEl?.classList.toggle('urgent', urgent);
   }
 
   // ─── Combo Tag ───────────────────────────────────────────
