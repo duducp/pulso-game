@@ -9,12 +9,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💓</text></svg>" />
+  <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.svg" />
+  <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.svg" />
   <link rel="manifest" href="./manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="PULSO" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <style>
-    :root{--bg:#090B10;--ink:#E9EDF2;--line:#1B2130;--dim:#7C8AA0;--cyan:#4DF0E0;--gold:#FFC24D;--red:#FF5C6C;--purple:#A78BFA;--orange:#FB923C}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);user-select:none}#wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(9,11,16,0.78);backdrop-filter:blur(6px);padding:20px;overflow-y:auto}.hidden{display:none}h1{font-size:44px;margin:0;letter-spacing:-2px;font-weight:700;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}.mode-opt{text-transform:uppercase}.mode-selector{touch-action:pan-y}
+    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/space-grotesk-400.ttf) format('truetype')}@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url(./fonts/space-grotesk-600.ttf) format('truetype')}@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url(./fonts/space-grotesk-700.ttf) format('truetype')}:root{--bg:#090B10;--ink:#E9EDF2;--line:#1B2130;--dim:#7C8AA0;--cyan:#4DF0E0;--gold:#FFC24D;--red:#FF5C6C;--purple:#A78BFA;--orange:#FB923C}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);user-select:none}#wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(9,11,16,0.78);backdrop-filter:blur(6px);padding:20px;overflow-y:auto}.hidden{display:none}h1{font-size:44px;margin:0;letter-spacing:-2px;font-weight:700;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}.mode-opt{text-transform:uppercase}.mode-selector{touch-action:pan-y}
   </style>
 </head>
 <body>
