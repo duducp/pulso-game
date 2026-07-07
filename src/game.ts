@@ -6,7 +6,8 @@ import {
   POWERUP_SLOWMO_DURATION, POWERUP_DOUBLE_DURATION,
   POWERUP_SLOWMO_FACTOR, POWERUP_DOUBLE_FACTOR,
   POWERUP_MAGNET_DURATION, MAGNET_ORBS_PER_PASS,
-  POWERUP_WEIGHTS, POWERUP_WEIGHT_TOTAL,
+  POWERUP_FREEZE_DURATION, POWERUP_PLATING_DURATION, POWERUP_AUTOFOCUS_DURATION,
+  POWERUP_WEIGHTS, POWERUPS_BY_MODE,
 } from './types';
 import { xmur3, mulberry32, todayStr } from './rng';
 import {
@@ -40,6 +41,9 @@ const POWERUP_ICONS: Record<PowerUpType, string> = {
   slowmo: '⏱️',
   doublepulse: '💥',
   magnet: '🧲',
+  freeze: '❄️',
+  plating: '🔰',
+  autofocus: '🎯',
 };
 
 export class Game {
@@ -339,10 +343,11 @@ export class Game {
   }
 
   private spawnPowerUp(gapCenterY: number): void {
-    // Weighted random selection
-    const types: PowerUpType[] = ['shield', 'slowmo', 'doublepulse', 'magnet'];
-    let roll = this.rng() * POWERUP_WEIGHT_TOTAL;
-    let type: PowerUpType = 'shield';
+    // Weighted random selection from types available in this mode
+    const types = POWERUPS_BY_MODE[this.modeType];
+    const totalWeight = types.reduce((s, t) => s + POWERUP_WEIGHTS[t], 0);
+    let roll = this.rng() * totalWeight;
+    let type: PowerUpType = types[0];
     for (const t of types) {
       roll -= POWERUP_WEIGHTS[t];
       if (roll <= 0) { type = t; break; }
@@ -366,7 +371,11 @@ export class Game {
     spawnPowerUpCollect(this.particles, pu.x, pu.y, pu.type);
 
     // Visual flash based on type
-    const color = pu.type === 'shield' ? '93,186,255' : pu.type === 'slowmo' ? '187,134,252' : '255,107,157';
+    const flashColors: Record<PowerUpType, string> = {
+      shield: '93,186,255', slowmo: '187,134,252', doublepulse: '255,107,157',
+      magnet: '255,215,0', freeze: '0,229,255', plating: '255,138,101', autofocus: '206,147,216',
+    };
+    const color = flashColors[pu.type];
     const fel = this.flashOverlayEl;
     if (fel) {
       fel.style.background = `rgba(${color},0.2)`;
@@ -395,6 +404,20 @@ export class Game {
       case 'magnet':
         this.activePowerUp = 'magnet';
         this.powerUpTimer = POWERUP_MAGNET_DURATION;
+        break;
+      case 'freeze':
+        this.activePowerUp = 'freeze';
+        this.powerUpTimer = POWERUP_FREEZE_DURATION;
+        // Add a small time bonus on collect
+        this.timeRemaining += 0.5;
+        break;
+      case 'plating':
+        this.activePowerUp = 'plating';
+        this.powerUpTimer = POWERUP_PLATING_DURATION;
+        break;
+      case 'autofocus':
+        this.activePowerUp = 'autofocus';
+        this.powerUpTimer = POWERUP_AUTOFOCUS_DURATION;
         break;
     }
 
@@ -452,10 +475,13 @@ export class Game {
       this.speedValEl.textContent = String(Math.round((this.speed / this.W) * 100));
     }
 
-    // ── Timed mode countdown ──
+    // ── Timed mode countdown (paused during freeze) ──
     if (this.modeType === 'timed') {
-      this.timeRemaining -= dt;
+      if (this.activePowerUp !== 'freeze') {
+        this.timeRemaining -= dt;
+      }
       if (this.timerEl) this.timerEl.textContent = String(Math.ceil(this.timeRemaining));
+      if (this.timerEl) this.timerEl.style.color = this.activePowerUp === 'freeze' ? 'var(--cyan)' : 'var(--red)';
       if (this.timeRemaining <= 0) { this.endGame(); return; }
     }
 
@@ -561,6 +587,24 @@ export class Game {
     updateParticles(this.particles, dt);
     this.particles = this.particles.filter(p => p.life > 0);
 
+    // ── Autofocus: guide player toward nearest gap center ──
+    if (this.activePowerUp === 'autofocus') {
+      let nearestDist = Infinity;
+      let targetY = this.player.y;
+      for (const o of this.obstacles) {
+        const gapCenter = o.gapY + o.gapH / 2;
+        const d = Math.abs(this.player.x - o.x);
+        if (d < nearestDist) {
+          nearestDist = d;
+          targetY = gapCenter;
+        }
+      }
+      const pull = (targetY - this.player.y) * 1.8;
+      this.player.vy += pull * dt;
+      // Cap velocity so it's smooth
+      this.player.vy = Math.max(-this.H * 0.5, Math.min(this.H * 0.5, this.player.vy));
+    }
+
     this.updateRecordPace();
   }
 
@@ -642,19 +686,24 @@ export class Game {
             setTimeout(() => this.flashOverlayEl?.classList.remove('flash'), 80);
             spawnShatter(this.particles, o.x, 0, topY, o.w);
             spawnShatter(this.particles, o.x, botY, this.H, o.w);
-          } else if (this.activePowerUp === 'shield') {
-            // Shield absorbs collision
-            this.activePowerUp = null;
-            this.powerUpTimer = 0;
-            if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
-            this.updatePowerUpIndicators();
+          } else if (this.activePowerUp === 'shield' || this.activePowerUp === 'plating') {
+            // Shield / Plating absorbs collision
+            const isPlating = this.activePowerUp === 'plating';
+            if (!isPlating) {
+              // Shield: consumed after 1 hit
+              this.activePowerUp = null;
+              this.powerUpTimer = 0;
+              if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
+              this.updatePowerUpIndicators();
+            }
             this.shakeTime = 0.15;
             soundBreak();
             if (navigator.vibrate) navigator.vibrate(20);
-            // Visual: blue flash
+            // Visual flash
+            const flashRgb = isPlating ? '255,138,101' : '93,186,255';
             const fel = this.flashOverlayEl;
             if (fel) {
-              fel.style.background = 'rgba(93,186,255,0.25)';
+              fel.style.background = `rgba(${flashRgb},0.25)`;
               fel.classList.add('flash');
               setTimeout(() => {
                 fel.classList.remove('flash');

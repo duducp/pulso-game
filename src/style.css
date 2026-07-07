@@ -21,7 +21,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: var(--bg);
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Noto Color Emoji', system-ui, sans-serif;
   color: var(--ink);
   user-select: none;
 }
@@ -268,6 +268,7 @@ canvas {
   backdrop-filter: blur(6px);
   padding: 20px;
   overflow-y: auto;
+  z-index: 100;
 }
 
 .hidden {
@@ -328,6 +329,119 @@ h1 {
   border-color: var(--cyan);
 }
 
+/* ─── Start Screen Stats ────────────────────────────────── */
+
+.stats-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 6px 12px;
+  min-width: 56px;
+}
+
+.sp-label {
+  font-family: ui-monospace, monospace;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.sp-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cyan);
+  line-height: 1.2;
+}
+
+@keyframes titleGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Staggered entrance ────────────────────────────────── */
+
+#startScreen > * {
+  animation: fadeSlideIn 0.45s ease both;
+}
+
+#startScreen > :nth-child(1) { animation-delay: 0.00s; }
+#startScreen > :nth-child(2) { animation-delay: 0.07s; }
+#startScreen > :nth-child(3) { animation-delay: 0.14s; }
+#startScreen > :nth-child(4) { animation-delay: 0.21s; }
+#startScreen > :nth-child(5) { animation-delay: 0.28s; }
+#startScreen > :nth-child(6) { animation-delay: 0.35s; }
+#startScreen > :nth-child(7) { animation-delay: 0.42s; }
+#startScreen > :nth-child(8) { animation-delay: 0.49s; }
+#startScreen > :nth-child(9) { animation-delay: 0.56s; }
+
+#startScreen h1 {
+  animation: fadeSlideIn 0.45s ease both, titleGlow 3s ease-in-out 0.45s infinite;
+}
+
+/* ─── Start Screen Buttons ──────────────────────────────── */
+
+.modebtns-primary {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 6px;
+}
+
+.modebtns-primary button {
+  flex: 1;
+  font-size: 13px;
+  padding: 13px 8px;
+}
+
+.modebtns-secondary {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 14px;
+}
+
+.modebtns-secondary button {
+  flex: 1;
+  font-size: 11px;
+  padding: 10px 6px;
+  letter-spacing: 0.3px;
+}
+
+/* ─── Power-up Legend ───────────────────────────────────── */
+
+.legend-wrap {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.legend-icon {
+  font-size: 14px;
+  opacity: 0.45;
+  font-family: 'Noto Color Emoji', sans-serif;
+}
+
+.legend-icon.exclusive {
+  opacity: 0.2;
+}
+
 /* ─── Buttons ───────────────────────────────────────────── */
 
 .modebtns {
@@ -339,7 +453,7 @@ h1 {
 }
 
 button {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', 'Noto Color Emoji', sans-serif;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -564,6 +678,7 @@ button:active {
 
 .pu-indicator {
   font-size: 16px;
+  font-family: 'Noto Color Emoji', sans-serif;
   opacity: 0.25;
   filter: grayscale(0.8) brightness(0.5);
   transition: opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;

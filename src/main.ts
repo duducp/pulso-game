@@ -4,7 +4,7 @@ import { Renderer } from './renderer';
 import { InputManager } from './input';
 import { initAudio, setSoundEnabled, isSoundEnabled } from './audio';
 import { renderLBInto, showToast, getShareText } from './ui';
-import { loadName, saveName, loadList } from './storage';
+import { loadName, saveName, loadList, loadBest } from './storage';
 import { todayStr } from './rng';
 
 // ─── DOM refs ─────────────────────────────────────────────
@@ -35,6 +35,19 @@ loadName().then((n) => {
 });
 loadList('lb:daily:' + todayStr()).then((list) => {
   renderLBInto(lbList, list);
+});
+// Load best scores for start screen stats
+Promise.all([
+  loadBest('profile:best:free'),
+  loadBest('profile:best:timed'),
+  loadBest('profile:best:survival'),
+]).then(([free, timed, survival]) => {
+  const elFree = document.getElementById('statFree');
+  const elTimed = document.getElementById('statTimed');
+  const elSurvival = document.getElementById('statSurvival');
+  if (elFree) elFree.textContent = String(free);
+  if (elTimed) elTimed.textContent = String(timed);
+  if (elSurvival) elSurvival.textContent = String(survival);
 });
 game.loadPersistedData();
 

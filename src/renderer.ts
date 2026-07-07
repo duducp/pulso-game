@@ -95,8 +95,14 @@ export class Renderer {
     }
 
     // Power-ups
-    const powerUpIcons: Record<PowerUpType, string> = { shield: '🛡️', slowmo: '⏱️', doublepulse: '💥', magnet: '🧲' };
-    const powerUpColors: Record<PowerUpType, string> = { shield: COLORS.shield, slowmo: COLORS.slowmo, doublepulse: COLORS.doublepulse, magnet: COLORS.magnet };
+    const powerUpIcons: Record<PowerUpType, string> = {
+      shield: '🛡️', slowmo: '⏱️', doublepulse: '💥', magnet: '🧲',
+      freeze: '❄️', plating: '🔰', autofocus: '🎯',
+    };
+    const powerUpColors: Record<PowerUpType, string> = {
+      shield: COLORS.shield, slowmo: COLORS.slowmo, doublepulse: COLORS.doublepulse, magnet: COLORS.magnet,
+      freeze: COLORS.freeze, plating: COLORS.plating, autofocus: COLORS.autofocus,
+    };
     for (const pu of s.powerUps) {
       if (pu.collected) continue;
       const bob = Math.sin(pu.phase * 3) * 4;
@@ -113,8 +119,8 @@ export class Renderer {
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
 
-      // Icon
-      ctx.font = '22px sans-serif';
+      // Icon (Noto Color Emoji for consistent cross-platform rendering)
+      ctx.font = '22px "Noto Color Emoji", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(powerUpIcons[pu.type], pu.x, pu.y + bob + 1);

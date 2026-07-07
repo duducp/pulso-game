@@ -5,7 +5,7 @@ export type GameMode = 'menu' | 'playing' | 'paused' | 'over';
 export type GameModeType = 'free' | 'daily' | 'timed' | 'survival' | 'zen';
 
 // ─── Power Ups ─────────────────────────────────────────────
-export type PowerUpType = 'shield' | 'slowmo' | 'doublepulse' | 'magnet';
+export type PowerUpType = 'shield' | 'slowmo' | 'doublepulse' | 'magnet' | 'freeze' | 'plating' | 'autofocus';
 
 export interface PowerUp {
   x: number;
@@ -113,6 +113,9 @@ export const COLORS = {
   slowmo: '#BB86FC',
   doublepulse: '#FF6B9D',
   magnet: '#FFD700',
+  freeze: '#00E5FF',
+  plating: '#FF8A65',
+  autofocus: '#CE93D8',
 } as const;
 
 export const POWER_PASS = 16;
@@ -128,6 +131,18 @@ export const POWERUP_SLOWMO_FACTOR = 0.5;
 export const POWERUP_DOUBLE_FACTOR = 2;
 export const POWERUP_MAGNET_DURATION = 5;
 export const MAGNET_ORBS_PER_PASS = 2;
+export const POWERUP_FREEZE_DURATION = 4;
+export const POWERUP_PLATING_DURATION = 3;
+export const POWERUP_AUTOFOCUS_DURATION = 3;
+
+// Which power-ups are available per game mode
+export const POWERUPS_BY_MODE: Record<GameModeType, PowerUpType[]> = {
+  free: ['shield', 'slowmo', 'doublepulse', 'magnet'],
+  daily: ['shield', 'slowmo', 'doublepulse', 'magnet'],
+  timed: ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze'],
+  survival: ['shield', 'slowmo', 'doublepulse', 'magnet', 'plating'],
+  zen: ['shield', 'slowmo', 'doublepulse', 'magnet', 'autofocus'],
+};
 
 // Spawn weights (higher = more likely)
 export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
@@ -135,5 +150,7 @@ export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
   slowmo: 15,
   doublepulse: 30,
   magnet: 20,
+  freeze: 15,
+  plating: 15,
+  autofocus: 15,
 };
-export const POWERUP_WEIGHT_TOTAL = 35 + 15 + 30 + 20;

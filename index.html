@@ -7,7 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
+  <link rel="preload" as="font" href="https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsj.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj42Vksj.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj4PVksj.woff2" type="font/woff2" crossorigin />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💓</text></svg>" />
+  <style>
+    :root{--bg:#090B10;--ink:#E9EDF2;--line:#1B2130;--dim:#7C8AA0;--cyan:#4DF0E0;--gold:#FFC24D;--red:#FF5C6C;--purple:#A78BFA;--orange:#FB923C}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);user-select:none}#wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(9,11,16,0.78);backdrop-filter:blur(6px);padding:20px;overflow-y:auto}.hidden{display:none}h1{font-size:52px;margin:0;letter-spacing:-2px;font-weight:700;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  </style>
 </head>
 <body>
 <div id="wrap">
@@ -42,6 +49,9 @@
     <div class="pu-indicator" data-type="slowmo">⏱️</div>
     <div class="pu-indicator" data-type="doublepulse">💥</div>
     <div class="pu-indicator" data-type="magnet">🧲</div>
+    <div class="pu-indicator" data-type="freeze">❄️</div>
+    <div class="pu-indicator" data-type="plating">🔰</div>
+    <div class="pu-indicator" data-type="autofocus">🎯</div>
   </div>
   <div id="flashOverlay"></div>
   <div id="hint">toque para pulsar</div>
@@ -50,15 +60,36 @@
   <div class="overlay" id="startScreen">
     <div class="eyebrow">um toque · reflexo puro</div>
     <h1>PULSO</h1>
-    <p class="sub">Toque para pulsar e desviar das barreiras.<br />Quanto mais perto, mais pontos.</p>
-    <input id="nameInput" maxlength="10" placeholder="SEU NOME" autocomplete="off" />
-    <div class="modebtns">
-      <button class="gold" id="dailyBtn">Desafio de hoje</button>
-      <button class="primary" id="freeBtn">Modo livre</button>
-      <button class="timedBtn" id="timedBtn">⏱ Cronometrado (30s)</button>
+    <p class="sub">Pule para desviar das barreiras.<br/>Quanto mais perto, mais pontos.</p>
+
+    <div class="stats-row" id="startStats">
+      <div class="stat-pill"><span class="sp-label">LIVRE</span><span class="sp-val" id="statFree">0</span></div>
+      <div class="stat-pill"><span class="sp-label">TIMED</span><span class="sp-val" id="statTimed">0</span></div>
+      <div class="stat-pill"><span class="sp-label">SURV</span><span class="sp-val" id="statSurvival">0</span></div>
+    </div>
+
+    <div class="modebtns-primary">
+      <button class="gold" id="dailyBtn">⚡ Desafio de hoje</button>
+      <button class="primary" id="freeBtn">🎯 Modo livre</button>
+    </div>
+    <div class="modebtns-secondary">
+      <button class="timedBtn" id="timedBtn">⏱ Cronometrado</button>
       <button class="survivalBtn" id="survivalBtn">☠ Sobrevivência</button>
       <button class="zenBtn" id="zenBtn">🧘 Zen</button>
     </div>
+
+    <div class="legend-wrap">
+      <span class="legend-icon">🛡️</span>
+      <span class="legend-icon">⏱️</span>
+      <span class="legend-icon">💥</span>
+      <span class="legend-icon">🧲</span>
+      <span class="legend-icon exclusive">❄️</span>
+      <span class="legend-icon exclusive">🔰</span>
+      <span class="legend-icon exclusive">🎯</span>
+    </div>
+
+    <input id="nameInput" maxlength="10" placeholder="SEU NOME" autocomplete="off" />
+
     <div class="lbwrap">
       <div class="lbtitle" id="lbTitle">Ranking de hoje</div>
       <div id="lbList"><div class="lbempty">carregando...</div></div>
