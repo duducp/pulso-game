@@ -209,6 +209,24 @@ export class Renderer {
     }
     ctx.globalAlpha = 1;
 
+    // Invincibility aura (revive)
+    if (s.invincibleTimer > 0) {
+      const pulse = Math.sin(s.tick * 16) * 0.3 + 0.5;
+      ctx.save();
+      ctx.translate(s.player.x, s.player.y);
+      ctx.globalAlpha = pulse * 0.25;
+      ctx.strokeStyle = COLORS.red;
+      ctx.shadowColor = COLORS.red;
+      ctx.shadowBlur = 28;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, s.player.r * 1.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
     // Player
     ctx.save();
     ctx.translate(s.player.x, s.player.y);

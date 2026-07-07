@@ -15,6 +15,7 @@ export interface GameOverStats {
   maxCombo: number;
   tick: number;
   zenFalls: number;
+  reviveCount: number;
   modeType: GameModeType;
 }
 
@@ -33,6 +34,7 @@ export function renderGameOverStats(stats: GameOverStats): void {
   byId('finalCombo')!.textContent = String(stats.maxCombo);
   byId('finalTime')!.textContent = String(Math.round(stats.tick));
   byId('finalFalls')!.textContent = String(stats.zenFalls);
+  byId('finalRevives')!.textContent = String(stats.reviveCount);
 
   // Show/hide mode-specific stats
   const isZen = stats.modeType === 'zen';

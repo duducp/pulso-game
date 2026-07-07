@@ -2,6 +2,7 @@ import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, Ga
 import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION, STEP,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
+  LIVES_MAX, INVINCIBILITY_DURATION, LIFE_POINTS,
 } from './constants';
 import {
   POWERUP_SHIELD_DURATION,
@@ -22,6 +23,7 @@ import {
   spawnNearText,
   spawnNearBurst,
   spawnPowerUpCollect,
+  spawnReviveBurst,
   spawnMagnetOrbs,
   updateParticles,
 } from './particles';
@@ -37,6 +39,8 @@ import {
   soundOrbCollect,
   soundBounce,
   soundUrgent,
+  soundRevive,
+  soundLifeCollect,
   isSoundEnabled,
 } from './audio';
 import { submitScore, loadBestRecord, saveBestRecord } from './storage';
@@ -79,6 +83,9 @@ export class Game {
   magnetOrbs = 0;
   slowmoMultiplier = 1;
   scoreMultiplier = 1;
+  lives = 0;
+  invincibleTimer = 0;
+  reviveCount = 0;
 
   W: number;
   H: number;
@@ -147,6 +154,9 @@ export class Game {
       powerUpTimer: this.powerUpTimer,
       slowmoMultiplier: this.slowmoMultiplier,
       scoreMultiplier: this.scoreMultiplier,
+      lives: this.lives,
+      invincibleTimer: this.invincibleTimer,
+      reviveCount: this.reviveCount,
       W: this.W,
       H: this.H,
     };
@@ -180,6 +190,12 @@ export class Game {
     this.magnetOrbs = 0;
     this.slowmoMultiplier = 1;
     this.scoreMultiplier = 1;
+    this.lives = 0;
+    this.invincibleTimer = 0;
+    this.reviveCount = 0;
+
+    // HUD lives display
+    this.hud.updateLives(0, LIVES_MAX);
 
     // HUD reset
     this.hud.reset(this.modeType);
@@ -238,6 +254,13 @@ export class Game {
 
     this.timeRemaining = mode === 'timed' ? TIMED_DURATION : 0;
     this.reset();
+
+    // Survival and timed modes start with a guaranteed life
+    if (mode === 'survival' || mode === 'timed') {
+      this.lives = 1;
+      this.hud.updateLives(1, LIVES_MAX);
+    }
+
     this.mode = 'playing';
 
     const startScreen = document.getElementById('startScreen');
@@ -314,7 +337,9 @@ export class Game {
   private collectPowerUp(pu: PowerUp): void {
     if (pu.collected) return;
     pu.collected = true;
-    soundPowerUp();
+    if (pu.type !== 'life') {
+      soundPowerUp();
+    }
     spawnPowerUpCollect(this.particles, pu.x, pu.y, pu.type);
 
     const color = POWERUP_FLASH_COLORS[pu.type];
@@ -353,6 +378,15 @@ export class Game {
         this.activePowerUp = 'autofocus';
         this.powerUpTimer = POWERUP_AUTOFOCUS_DURATION;
         break;
+      case 'life':
+        if (this.lives < LIVES_MAX) {
+          this.lives++;
+          this.score += LIFE_POINTS;
+          this.hud.updateScore(this.score);
+          this.hud.updateLives(this.lives, LIVES_MAX);
+          soundLifeCollect();
+        }
+        return; // Don't show power-up tag for life
     }
 
     // Update power-up HUD
@@ -448,10 +482,20 @@ export class Game {
         this.player.vy = -this.H * 0.4;
         this.zenFalls++;
         soundBounce();
+      } else if (this.lives > 0) {
+        this.revive();
+        // Bounce player back up after revive
+        this.player.y = this.H - this.player.r;
+        this.player.vy = -this.H * 0.35;
       } else {
         this.endGame();
         return;
       }
+    }
+
+    // ── Invincibility timer ──
+    if (this.invincibleTimer > 0) {
+      this.invincibleTimer -= dt;
     }
 
     // ── Break mode ──
@@ -576,6 +620,37 @@ export class Game {
     this.hud.quickFlash(80);
   }
 
+  /**
+   * Consume a life and trigger revive effects.
+   * @param o Optional obstacle that killed the player — will be shattered.
+   * @param topY Top of the obstacle gap (needed for shatter).
+   */
+  private revive(o?: Obstacle, topY?: number): void {
+    this.reviveCount++;
+    this.lives--;
+    this.hud.updateLives(this.lives, LIVES_MAX);
+    this.invincibleTimer = INVINCIBILITY_DURATION;
+    this.shakeTime = 0.25;
+    soundRevive();
+    if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
+    this.hud.flashOverlayCustom('255,92,108', 0.3, '255,92,108', '0.15', 300);
+    spawnReviveBurst(this.particles, this.player.x, this.player.y);
+
+    // Shatter the obstacle that killed the player
+    if (o && topY !== undefined) {
+      spawnShatter(this.particles, o.x, 0, topY, o.w);
+      spawnShatter(this.particles, o.x, topY + o.gapH, this.H, o.w);
+    }
+
+    // Show "reviveu!" text — set text BEFORE showing to avoid flash of wrong value
+    const comboEl = document.getElementById('comboTag');
+    if (comboEl) {
+      comboEl.textContent = 'reviveu! 💓';
+      comboEl.classList.add('show');
+    }
+    setTimeout(() => this.hud.hideComboTag(), 600);
+  }
+
   private updateObstacles(): void {
     for (const o of this.obstacles) {
       moveObstacle(o, this.speed);
@@ -637,6 +712,13 @@ export class Game {
           } else if (this.modeType === 'zen') {
             this.player.vy = -this.H * 0.35;
             this.zenFalls++;
+          } else if (this.invincibleTimer > 0) {
+            // Invincible — pass through obstacle
+            o.passed = true;
+          } else if (this.lives > 0) {
+            // Revive! Break obstacle + consume a life
+            o.broken = true;
+            this.revive(o, topY);
           } else {
             this.endGame();
             return;
@@ -741,6 +823,7 @@ export class Game {
       maxCombo: this.maxCombo,
       tick: this.tick,
       zenFalls: this.zenFalls,
+      reviveCount: this.reviveCount,
       modeType: this.modeType,
     });
     this.hud.updateBestVal(this._currentBest);

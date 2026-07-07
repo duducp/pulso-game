@@ -118,6 +118,7 @@ const POWERUP_COLORS: Record<PowerUpType, string> = {
   freeze: COLORS.freeze,
   plating: COLORS.plating,
   autofocus: COLORS.autofocus,
+  life: COLORS.red,
 };
 
 export function spawnPowerUpCollect(particles: Particle[], px: number, py: number, type: PowerUpType): void {
@@ -193,6 +194,48 @@ export function spawnNearText(particles: Particle[], px: number, py: number): vo
     type: 'text',
     text: 'quase!',
   });
+}
+
+/** Burst of red heart-like particles when reviving */
+export function spawnReviveBurst(particles: Particle[], px: number, py: number): void {
+  const red = COLORS.red;
+  // Expanding red ring
+  particles.push({ x: px, y: py, r: 6, life: 0.7, type: 'powerup-ring', color: red });
+  particles.push({ x: px, y: py, r: 6, life: 0.7, type: 'powerup-ring', color: red });
+  particles.push({ x: px, y: py, r: 6, life: 0.7, type: 'powerup-ring', color: red });
+
+  // Heart-like burst outward
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 60 + Math.random() * 160;
+    const size = 2 + Math.random() * 5;
+    particles.push({
+      x: px,
+      y: py,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      r: size,
+      life: 0.7 + Math.random() * 0.4,
+      type: 'powerup',
+      color: red,
+    });
+  }
+
+  // Fast thin rays
+  for (let i = 0; i < 10; i++) {
+    const a = (Math.PI * 2 / 10) * i + Math.random() * 0.3;
+    const sp = 180 + Math.random() * 100;
+    particles.push({
+      x: px,
+      y: py,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      r: 1.5,
+      life: 0.3 + Math.random() * 0.15,
+      type: 'powerup',
+      color: red,
+    });
+  }
 }
 
 /**

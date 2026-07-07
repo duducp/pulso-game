@@ -118,3 +118,17 @@ export function soundUrgent(): void {
   playTone(880, 0.08, 'square', 0.06);
   setTimeout(() => playTone(660, 0.1, 'square', 0.05), 100);
 }
+
+/** Revive sound — rising tone that signals a second chance */
+export function soundRevive(): void {
+  playTone(400, 0.1, 'sine', 0.08);
+  setTimeout(() => playTone(550, 0.1, 'sine', 0.09), 100);
+  setTimeout(() => playTone(720, 0.12, 'sine', 0.10), 200);
+  setTimeout(() => playTone(900, 0.2, 'sine', 0.08), 300);
+}
+
+/** Life collected — short cheerful chime */
+export function soundLifeCollect(): void {
+  playTone(880, 0.08, 'sine', 0.07);
+  setTimeout(() => playTone(1100, 0.1, 'sine', 0.08), 80);
+}

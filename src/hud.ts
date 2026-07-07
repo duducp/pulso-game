@@ -22,6 +22,8 @@ export class HudManager {
   private timerEl: HTMLElement | null = null;
   private powerUpTagEl: HTMLElement | null = null;
   private powerUpIndicatorEls: NodeListOf<Element> | null = null;
+  private livesHeartsEl: HTMLElement | null = null;
+  private livesTextEl: HTMLElement | null = null;
 
   constructor() {
     this.cacheDomRefs();
@@ -43,6 +45,8 @@ export class HudManager {
     this.timerEl = document.getElementById('timerVal');
     this.powerUpTagEl = document.getElementById('powerUpTag');
     this.powerUpIndicatorEls = document.querySelectorAll('.pu-indicator');
+    this.livesHeartsEl = document.getElementById('livesHearts');
+    this.livesTextEl = document.getElementById('livesText');
   }
 
   // ─── Reset ────────────────────────────────────────────────
@@ -237,6 +241,21 @@ export class HudManager {
   }
 
   // ─── Hint ─────────────────────────────────────────────────
+  // ─── Lives HUD ────────────────────────────────────────────
+  updateLives(lives: number, max: number): void {
+    if (this.livesHeartsEl) {
+      this.livesHeartsEl.textContent = '💓'.repeat(lives);
+    }
+    if (this.livesTextEl) {
+      this.livesTextEl.textContent = 'x' + lives;
+    }
+    // Show/hide the whole HUD based on whether player has lives
+    const el = this.livesHeartsEl?.parentElement;
+    if (el) {
+      el.style.display = lives > 0 ? 'flex' : 'none';
+    }
+  }
+
   setHintOpacity(val: string): void {
     if (this.hintEl) this.hintEl.style.opacity = val;
   }

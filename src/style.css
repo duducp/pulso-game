@@ -1038,6 +1038,37 @@ button:active {
   min-height: 18px;
 }
 
+/* ─── Lives HUD ──────────────────────────────────────────── */
+
+#livesHud {
+  position: absolute;
+  left: 50%;
+  top: 68px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  font-family: 'Space Grotesk', 'Noto Color Emoji', sans-serif;
+  font-size: 12px;
+  color: var(--dim);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  z-index: 5;
+}
+
+#livesHearts {
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+#livesText {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
 /* ─── Timer HUD ─────────────────────────────────────────── */
 
 #timerHud {

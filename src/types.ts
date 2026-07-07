@@ -5,7 +5,7 @@ export type GameMode = 'menu' | 'playing' | 'paused' | 'over';
 export type GameModeType = 'free' | 'daily' | 'timed' | 'survival' | 'zen';
 
 // ─── Power Ups ─────────────────────────────────────────────
-export type PowerUpType = 'shield' | 'slowmo' | 'doublepulse' | 'magnet' | 'freeze' | 'plating' | 'autofocus';
+export type PowerUpType = 'shield' | 'slowmo' | 'doublepulse' | 'magnet' | 'freeze' | 'plating' | 'autofocus' | 'life';
 
 export interface PowerUp {
   x: number;
@@ -94,6 +94,9 @@ export interface GameState {
   powerUpTimer: number;
   slowmoMultiplier: number;
   scoreMultiplier: number;
+  lives: number;
+  invincibleTimer: number;
+  reviveCount: number;
   W: number;
   H: number;
 }
