@@ -14,11 +14,11 @@ export const POWERUP_AUTOFOCUS_DURATION = 3;
 
 // ─── Which power-ups are available per game mode ───────────
 export const POWERUPS_BY_MODE: Record<GameModeType, PowerUpType[]> = {
-  free: ['shield', 'slowmo', 'doublepulse', 'magnet', 'life'],
-  daily: ['shield', 'slowmo', 'doublepulse', 'magnet', 'life'],
-  timed: ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'life'],
-  survival: ['shield', 'slowmo', 'doublepulse', 'magnet', 'plating', 'life'],
-  zen: ['shield', 'slowmo', 'doublepulse', 'magnet', 'autofocus', 'life'],
+  free: ['life', 'shield', 'slowmo', 'doublepulse', 'magnet'],
+  daily: ['life', 'shield', 'slowmo', 'doublepulse', 'magnet'],
+  timed: ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze'],
+  survival: ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'plating'],
+  zen: ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'autofocus'],
 };
 
 // ─── Spawn weights (higher = more likely) ──────────────────

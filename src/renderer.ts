@@ -1,4 +1,4 @@
-import type { GameState, PowerUpType } from './types';
+import type { GameState } from './types';
 import { COLORS } from './types';
 import { POWERUP_ICONS, POWERUP_RENDER_COLORS } from './powerups';
 

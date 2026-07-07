@@ -3,7 +3,7 @@ import { MODE_ITEMS, MODE_NAMES } from './modes';
 import { POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
 import { saveName } from './storage';
 import { initPuModal } from './puModal';
-import { initCarousel, focusMode, selectedIdx, setSelectedIdx } from './carousel';
+import { initCarousel, focusMode, selectedIdx } from './carousel';
 import type { Game } from './game';
 
 // ─── Shared state (exported for main.ts) ─────────────────
@@ -109,7 +109,7 @@ export function initStartScreen(
   // ── Build power-up HUD indicators ──
   const indicatorsEl = document.getElementById('powerUpIndicators');
   if (indicatorsEl) {
-    ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus', 'life'].forEach((type) => {
+    ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'].forEach((type) => {
       const div = document.createElement('div');
       div.className = 'pu-indicator';
       div.dataset.type = type;
@@ -188,7 +188,7 @@ export function initStartScreen(
 
   // ── Build power-up icons ──
   if (puEl) {
-    const allPwuTypes: Array<keyof typeof POWERUP_ICONS> = ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus', 'life'];
+    const allPwuTypes: Array<keyof typeof POWERUP_ICONS> = ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
     allPwuTypes.forEach((type) => {
       const span = document.createElement('span');
       span.className = 'mp-icon';
