@@ -513,7 +513,7 @@ export class Game {
         this.hud.hideBreakTag();
         this._urgentPlayed = false; // reset flag so next break mode can play urgent sound
         // Brief invincibility + flash to prevent instant death on obstacle player was about to break
-        this.invincibleTimer = Math.max(this.invincibleTimer, 0.3);
+        this.invincibleTimer = Math.max(this.invincibleTimer, 0.5);
         this.shakeTime = Math.max(this.shakeTime, 0.15);
         this.hud.flashOverlay('255,92,108', 0.25, 250, '0');
       }
