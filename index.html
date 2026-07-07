@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>PULSO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💓</text></svg>" />
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+
+  <!-- ─── HUD ──────────────────────────────────────────── -->
+  <div id="hud">
+    <div id="score">
+      PULSOS<b id="scoreVal">0</b>
+      <div id="recordPace"></div>
+    </div>
+    <div style="text-align:right">
+      <div id="modeTag">LIVRE</div>
+      <div id="best">RECORDE<br /><span id="bestVal">0</span></div>
+    </div>
+  </div>
+
+  <div id="comboTag"></div>
+  <div id="speedTag">VEL <span id="speedVal">0</span> km/h</div>
+
+  <div id="recordBanner"><span class="txt">🔥 novo recorde!</span></div>
+
+  <div id="breakTag">modo ruptura!</div>
+  <div id="powerWrap"><div id="powerBar"></div></div>
+  <div id="flashOverlay"></div>
+  <div id="hint">toque para pulsar</div>
+
+  <!-- ─── Start Screen ─────────────────────────────────── -->
+  <div class="overlay" id="startScreen">
+    <div class="eyebrow">um toque · reflexo puro</div>
+    <h1>PULSO</h1>
+    <p class="sub">Toque para pulsar e desviar das barreiras.<br />Quanto mais perto, mais pontos.</p>
+    <input id="nameInput" maxlength="10" placeholder="SEU NOME" autocomplete="off" />
+    <div class="modebtns">
+      <button class="gold" id="dailyBtn">Desafio de hoje</button>
+      <button class="primary" id="freeBtn">Modo livre</button>
+    </div>
+    <div class="lbwrap">
+      <div class="lbtitle" id="lbTitle">Ranking de hoje</div>
+      <div id="lbList"><div class="lbempty">carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- ─── Game Over Screen ─────────────────────────────── -->
+  <div class="overlay hidden" id="overScreen">
+    <div class="label" id="overLabel">fim de linha</div>
+    <div class="bignum" id="finalScore">0</div>
+    <div id="rankLine"></div>
+    <div class="row" style="gap:18px">
+      <div class="stat"><div class="n" id="finalBest">0</div>RECORDE</div>
+      <div class="stat"><div class="n" id="finalNear">0</div>QUASE-LÁ</div>
+      <div class="stat"><div class="n" id="finalBreaks">0</div>PAREDES</div>
+      <div class="stat"><div class="n" id="finalBpm">0</div>RITMO</div>
+      <div class="stat"><div class="n" id="finalCombo">0</div>MAIOR COMBO</div>
+    </div>
+    <button class="primary" id="retryBtn">Jogar de novo</button>
+    <button class="ghost" id="shareBtn">Copiar resultado</button>
+    <div class="lbwrap">
+      <div class="lbtitle" id="lbTitle2">Ranking</div>
+      <div id="lbList2"><div class="lbempty">carregando...</div></div>
+    </div>
+  </div>
+
+  <div id="toast">Copiado! Cole e mande pra alguém 💓</div>
+</div>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

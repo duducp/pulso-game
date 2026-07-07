@@ -1,0 +1,492 @@
+:root {
+  --bg: #090B10;
+  --line: #1B2130;
+  --cyan: #4DF0E0;
+  --coral: #FF5C6C;
+  --gold: #FFC24D;
+  --ink: #E9EDF2;
+  --dim: #5A6478;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: var(--ink);
+  user-select: none;
+}
+
+#wrap {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+canvas {
+  display: block;
+  touch-action: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── HUD ──────────────────────────────────────────────── */
+
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 20px;
+  pointer-events: none;
+  font-family: ui-monospace, monospace;
+}
+
+#score {
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+#score b {
+  display: block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 40px;
+  color: var(--ink);
+  letter-spacing: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+#comboTag {
+  position: absolute;
+  left: 20px;
+  bottom: 70px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gold);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  text-shadow: 0 0 20px rgba(255, 194, 77, 0.4);
+}
+
+#comboTag.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#speedTag {
+  position: absolute;
+  left: 20px;
+  bottom: 26px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  pointer-events: none;
+}
+
+#speedTag span {
+  color: var(--cyan);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+#modeTag {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-align: right;
+}
+
+#best {
+  text-align: right;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  margin-top: 4px;
+}
+
+#best span {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+#recordPace {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--dim);
+  margin-top: 6px;
+  transition: color 0.2s ease;
+}
+
+#recordPace.ahead {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+#scoreVal.gold {
+  background: linear-gradient(180deg, #FFE8B8, var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ─── Record Banner ─────────────────────────────────────── */
+
+#recordBanner {
+  position: absolute;
+  top: 38%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#recordBanner.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#recordBanner .txt {
+  display: inline-block;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(255, 194, 77, 0.6);
+  background: rgba(9, 11, 16, 0.5);
+  padding: 8px 20px;
+  border-radius: 100px;
+}
+
+/* ─── Power / Break Mode ────────────────────────────────── */
+
+#powerWrap {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 58px;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#powerBar {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--gold));
+  transition: width 0.08s linear;
+}
+
+#powerWrap.full #powerBar {
+  animation: powerFlash 0.4s infinite alternate;
+}
+
+@keyframes powerFlash {
+  from { opacity: 1; }
+  to { opacity: 0.55; }
+}
+
+#breakTag {
+  position: absolute;
+  top: 70px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#breakTag.show {
+  opacity: 1;
+}
+
+#flashOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(255, 194, 77, 0.15);
+  opacity: 0;
+  transition: opacity 0.06s ease;
+}
+
+#flashOverlay.flash {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* ─── Overlays ──────────────────────────────────────────── */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  background: rgba(9, 11, 16, 0.78);
+  backdrop-filter: blur(6px);
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.hidden {
+  display: none;
+}
+
+.eyebrow {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--coral);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+h1 {
+  font-size: 52px;
+  margin: 0;
+  letter-spacing: -2px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #fff, var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub {
+  color: var(--dim);
+  font-size: 13px;
+  max-width: 280px;
+  margin: 12px 0 20px;
+  line-height: 1.6;
+}
+
+/* ─── Name Input ────────────────────────────────────────── */
+
+#nameInput {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  text-align: center;
+  padding: 8px 4px;
+  width: 200px;
+  letter-spacing: 1px;
+  outline: none;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+#nameInput::placeholder {
+  color: var(--dim);
+}
+
+#nameInput:focus {
+  border-color: var(--cyan);
+}
+
+/* ─── Buttons ───────────────────────────────────────────── */
+
+.modebtns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+}
+
+button {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 15px 28px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  margin: 4px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.94);
+}
+
+.primary {
+  background: var(--cyan);
+  color: #06110F;
+  box-shadow: 0 0 30px rgba(77, 240, 224, 0.35);
+}
+
+.gold {
+  background: var(--gold);
+  color: #241A02;
+  box-shadow: 0 0 30px rgba(255, 194, 77, 0.3);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+/* ─── Leaderboard ───────────────────────────────────────── */
+
+.lbwrap {
+  margin-top: 22px;
+  width: 100%;
+  max-width: 280px;
+  text-align: left;
+}
+
+.lbtitle {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.lbrow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lbrow .n {
+  color: var(--dim);
+  width: 22px;
+  display: inline-block;
+}
+
+.lbrow .s {
+  color: var(--cyan);
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+}
+
+.lbempty {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+/* ─── Game Over Screen ──────────────────────────────────── */
+
+.bignum {
+  font-size: 76px;
+  font-weight: 700;
+  letter-spacing: -3px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.label {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.row {
+  display: flex;
+  gap: 28px;
+  margin: 14px 0 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat .n {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+#rankLine {
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 8px;
+  min-height: 18px;
+}
+
+/* ─── Toast ─────────────────────────────────────────────── */
+
+#toast {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #06110F;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 20;
+}
+
+#toast.show {
+  opacity: 1;
+}
+
+#hint {
+  position: absolute;
+  bottom: 26px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  pointer-events: none;
+}
