@@ -42,6 +42,15 @@ loadList('lb:daily:' + todayStr()).then((list) => {
 });
 game.loadPersistedData().then(() => updatePlayerStats(game));
 
+// ─── PWA: register service worker ─────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // SW registration failed — app works fine without it
+    });
+  });
+}
+
 // ─── Shared state ─────────────────────────────────────────
 let rafId = 0;
 

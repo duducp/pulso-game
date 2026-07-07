@@ -2,7 +2,7 @@ import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, Ga
 import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION, STEP,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
-} from './types';
+} from './constants';
 import {
   POWERUP_SHIELD_DURATION,
   POWERUP_SLOWMO_DURATION, POWERUP_DOUBLE_DURATION,
@@ -11,7 +11,7 @@ import {
   POWERUP_FREEZE_DURATION, POWERUP_PLATING_DURATION, POWERUP_AUTOFOCUS_DURATION,
   POWERUP_WEIGHTS, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_FLASH_COLORS,
 } from './powerups';
-import { MODE_LABELS, MODE_GAMEOVER_LABELS, MODE_LB_TITLES, MODE_BEST_KEYS } from './types';
+import { MODE_LABELS, MODE_GAMEOVER_LABELS, MODE_LB_TITLES, MODE_BEST_KEYS } from './modes';
 import { xmur3, mulberry32, todayStr } from './rng';
 import {
   spawnRing,
@@ -40,6 +40,7 @@ import {
 } from './audio';
 import { submitScore, loadBestRecord, saveBestRecord } from './storage';
 import { renderLBInto } from './ui';
+import { HudManager } from './hud';
 
 export class Game {
   // ─── Public state ────────────────────────────────────────
@@ -79,6 +80,9 @@ export class Game {
   W: number;
   H: number;
 
+  // ─── HUD Manager (DOM abstraction) ──────────────────────
+  hud: HudManager;
+
   // ─── Internal ────────────────────────────────────────────
   private lastSpawn = 0;
   private rng: () => number = Math.random;
@@ -89,47 +93,14 @@ export class Game {
   private bestSurvival: { score: number; date: string | null } = { score: 0, date: null };
   private _lastRank: number | null = null;
   private _currentBest = 0;
-  private recordPaceEl: HTMLElement | null = null;
-  private recordBannerEl: HTMLElement | null = null;
-  private scoreValEl: HTMLElement | null = null;
-  private comboTagEl: HTMLElement | null = null;
-  private breakTagEl: HTMLElement | null = null;
-  private powerWrapEl: HTMLElement | null = null;
-  private powerBarEl: HTMLElement | null = null;
-  private flashOverlayEl: HTMLElement | null = null;
-  private speedValEl: HTMLElement | null = null;
-  private bestValEl: HTMLElement | null = null;
-  private modeTagEl: HTMLElement | null = null;
-  private hintEl: HTMLElement | null = null;
-  private timerEl: HTMLElement | null = null;
-  private powerUpTagEl: HTMLElement | null = null;
-  private powerUpIndicatorEls: NodeListOf<Element> | null = null;
 
   onGameOver?: () => void;
 
   constructor(W: number, H: number) {
     this.W = W;
     this.H = H;
-    this.cacheDomRefs();
+    this.hud = new HudManager();
     this.reset();
-  }
-
-  private cacheDomRefs(): void {
-    this.recordPaceEl = document.getElementById('recordPace');
-    this.recordBannerEl = document.getElementById('recordBanner');
-    this.scoreValEl = document.getElementById('scoreVal');
-    this.comboTagEl = document.getElementById('comboTag');
-    this.breakTagEl = document.getElementById('breakTag');
-    this.powerWrapEl = document.getElementById('powerWrap');
-    this.powerBarEl = document.getElementById('powerBar');
-    this.flashOverlayEl = document.getElementById('flashOverlay');
-    this.speedValEl = document.getElementById('speedVal');
-    this.bestValEl = document.getElementById('bestVal');
-    this.modeTagEl = document.getElementById('modeTag');
-    this.hintEl = document.getElementById('hint');
-    this.timerEl = document.getElementById('timerVal');
-    this.powerUpTagEl = document.getElementById('powerUpTag');
-    this.powerUpIndicatorEls = document.querySelectorAll('.pu-indicator');
   }
 
   setDimensions(W: number, H: number): void {
@@ -205,21 +176,8 @@ export class Game {
     this.slowmoMultiplier = 1;
     this.scoreMultiplier = 1;
 
-    this.powerWrapEl?.classList.remove('full');
-    this.breakTagEl?.classList.remove('show');
-    this.recordBannerEl?.classList.remove('show');
-    this.scoreValEl?.classList.remove('gold');
-    this.comboTagEl?.classList.remove('show');
-    if (this.comboTagEl) this.comboTagEl.textContent = '';
-    this.flashOverlayEl?.classList.remove('flash');
-    if (this.powerUpTagEl) {
-      this.powerUpTagEl.style.display = 'none';
-    }
-    this.updatePowerUpIndicators();
-
-    const timerHud = document.getElementById('timerHud');
-    if (timerHud) timerHud.style.display = 'none';
-    if (this.hintEl) this.hintEl.style.opacity = this.modeType === 'zen' ? '0' : '1';
+    // HUD reset
+    this.hud.reset(this.modeType);
 
     if (this.dailyMode) {
       const seedGen = xmur3(todayStr());
@@ -281,24 +239,22 @@ export class Game {
     startScreen?.classList.add('hidden');
     overScreen?.classList.add('hidden');
 
-    if (this.modeTagEl) this.modeTagEl.textContent = this.getModeLabel();
-    if (this.bestValEl) this.bestValEl.textContent = String(this.targetBest);
+    this.hud.updateModeTag(this.getModeLabel());
+    this.hud.updateBestVal(this.targetBest);
 
-    const timerHud = document.getElementById('timerHud');
-    if (timerHud) timerHud.style.display = mode === 'timed' ? 'block' : 'none';
+    if (mode === 'timed') {
+      this.hud.showTimerBlock();
+    } else {
+      this.hud.hideTimerBlock();
+    }
 
-    if (this.recordPaceEl) {
-      if (mode === 'zen') {
-        this.recordPaceEl.textContent = 'sem game over — relaxe';
-        this.recordPaceEl.style.opacity = '1';
-      } else if (this.targetBest > 0) {
-        this.recordPaceEl.textContent = 'faltam ' + this.targetBest + ' pro recorde';
-        this.recordPaceEl.classList.remove('ahead');
-        this.recordPaceEl.style.opacity = '1';
-      } else {
-        this.recordPaceEl.textContent = 'definindo seu recorde';
-        this.recordPaceEl.style.opacity = '1';
-      }
+    if (mode === 'zen') {
+      this.hud.updateRecordPace('sem game over — relaxe');
+    } else if (this.targetBest > 0) {
+      this.hud.updateRecordPace('faltam ' + this.targetBest + ' pro recorde');
+      this.hud.setRecordPaceAhead(false);
+    } else {
+      this.hud.updateRecordPace('definindo seu recorde');
     }
   }
 
@@ -330,7 +286,6 @@ export class Game {
   }
 
   private spawnPowerUp(gapCenterY: number): void {
-    // Weighted random selection from types available in this mode
     const types = POWERUPS_BY_MODE[this.modeType];
     const totalWeight = types.reduce((s, t) => s + POWERUP_WEIGHTS[t], 0);
     let roll = this.rng() * totalWeight;
@@ -339,7 +294,6 @@ export class Game {
       roll -= POWERUP_WEIGHTS[t];
       if (roll <= 0) { type = t; break; }
     }
-    // Position within the obstacle gap, with variance for difficulty
     const variance = this.gapSize * 0.35;
     const y = gapCenterY + (this.rng() - 0.5) * variance;
     this.powerUps.push({
@@ -357,17 +311,8 @@ export class Game {
     soundPowerUp();
     spawnPowerUpCollect(this.particles, pu.x, pu.y, pu.type);
 
-    // Visual flash based on type
     const color = POWERUP_FLASH_COLORS[pu.type];
-    const fel = this.flashOverlayEl;
-    if (fel) {
-      fel.style.background = `rgba(${color},0.2)`;
-      fel.classList.add('flash');
-      setTimeout(() => {
-        fel.classList.remove('flash');
-        fel.style.background = 'rgba(255,194,77,0.15)';
-      }, 200);
-    }
+    this.hud.flashOverlay(color, 0.2, 200);
 
     switch (pu.type) {
       case 'shield':
@@ -392,7 +337,6 @@ export class Game {
       case 'freeze':
         this.activePowerUp = 'freeze';
         this.powerUpTimer = POWERUP_FREEZE_DURATION;
-        // Add a small time bonus on collect
         this.timeRemaining += 0.5;
         break;
       case 'plating':
@@ -406,20 +350,9 @@ export class Game {
     }
 
     // Update power-up HUD
-    if (this.powerUpTagEl) {
-      this.powerUpTagEl.style.display = 'flex';
-      const orbCnt = pu.type === 'magnet' ? ` <span class="pu-orbs">🪙0</span>` : '';
-      this.powerUpTagEl.innerHTML = `${POWERUP_ICONS[pu.type]} <span>${Math.ceil(this.powerUpTimer)}</span>${orbCnt}`;
-    }
-    this.updatePowerUpIndicators();
-  }
-
-  private updatePowerUpIndicators(): void {
-    if (!this.powerUpIndicatorEls) return;
-    for (const el of this.powerUpIndicatorEls) {
-      const type = el.getAttribute('data-type');
-      el.classList.toggle('active', type === this.activePowerUp);
-    }
+    const orbCnt = pu.type === 'magnet' ? ` <span class="pu-orbs">🪙0</span>` : '';
+    this.hud.showPowerUpTag(`${POWERUP_ICONS[pu.type]} <span>${Math.ceil(this.powerUpTimer)}</span>${orbCnt}`);
+    this.hud.updatePowerUpIndicators(this.activePowerUp);
   }
 
   update(dt: number): void {
@@ -429,23 +362,19 @@ export class Game {
     // ── Power-up timer ──
     if (this.activePowerUp && this.powerUpTimer > 0) {
       this.powerUpTimer -= dt;
-      if (this.powerUpTagEl) {
-        const span = this.powerUpTagEl.querySelector('span');
-        if (span) span.textContent = String(Math.ceil(this.powerUpTimer));
-      }
+      this.hud.updatePowerUpTimerText(String(Math.ceil(this.powerUpTimer)));
       if (this.powerUpTimer <= 0) {
         this.activePowerUp = null;
         this.powerUpTimer = 0;
         this.slowmoMultiplier = 1;
         this.scoreMultiplier = 1;
-        if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
-        this.updatePowerUpIndicators();
-        // Clean up any remaining magnet orbs
+        this.hud.hidePowerUpTag();
+        this.hud.updatePowerUpIndicators(null);
         this.particles = this.particles.filter(p => p.type !== 'orb');
       }
     }
 
-    // ── SlowMo recovery (return speed gradually) ──
+    // ── SlowMo recovery ──
     if (this.slowmoMultiplier < 1) {
       this.slowmoMultiplier = Math.min(1, this.slowmoMultiplier + dt * 0.5);
     }
@@ -456,17 +385,15 @@ export class Game {
     this.speed = (this.W * 0.34 + scoreFactor) * speedMult;
     this.gapSize = Math.max(this.H * 0.30 - this.score * 3.2 * speedMult, this.H * 0.20);
     this.bpm = 72 + this.score * 2.4;
-    if (this.speedValEl) {
-      this.speedValEl.textContent = String(Math.round((this.speed / this.W) * 100));
-    }
+    this.hud.updateSpeedText(String(Math.round((this.speed / this.W) * 100)));
 
-    // ── Timed mode countdown (paused during freeze) ──
+    // ── Timed mode countdown ──
     if (this.modeType === 'timed') {
       if (this.activePowerUp !== 'freeze') {
         this.timeRemaining -= dt;
       }
-      if (this.timerEl) this.timerEl.textContent = String(Math.ceil(this.timeRemaining));
-      if (this.timerEl) this.timerEl.style.color = this.activePowerUp === 'freeze' ? 'var(--cyan)' : 'var(--red)';
+      this.hud.updateTimerText(String(Math.ceil(this.timeRemaining)));
+      this.hud.setTimerColor(this.activePowerUp === 'freeze' ? 'var(--cyan)' : 'var(--red)');
       if (this.timeRemaining <= 0) { this.endGame(); return; }
     }
 
@@ -475,7 +402,6 @@ export class Game {
     if (this.tick - this.lastSpawn > interval) {
       this.lastSpawn = this.tick;
       const gapInfo = this.spawnObstacle();
-      // Spawn power-up inside the obstacle's gap — chance scales with score/difficulty
       const spawnChance = Math.min(0.50, 0.15 + this.score * 0.005);
       if (this.rng() < spawnChance) {
         this.spawnPowerUp(gapInfo.gapY + gapInfo.gapH / 2);
@@ -529,8 +455,8 @@ export class Game {
       if (this.breakTimer <= 0) {
         this.breakMode = false;
         this.power = 0;
-        this.powerWrapEl?.classList.remove('full');
-        this.breakTagEl?.classList.remove('show');
+        this.hud.setPowerBarFull(false);
+        this.hud.hideBreakTag();
       }
     }
     if (this.shakeTime > 0) this.shakeTime -= dt;
@@ -540,7 +466,7 @@ export class Game {
 
     this.updateObstacles();
 
-    if (this.powerBarEl) this.powerBarEl.style.width = this.power + '%';
+    this.hud.updatePowerBar(this.power);
 
     // ── Magnet orbs: attract toward player ──
     for (const p of this.particles) {
@@ -553,12 +479,11 @@ export class Game {
           p.x += (dx / dist) * speed * dt;
           p.y += (dy / dist) * speed * dt;
         }
-        // Orb lifetime decreases faster when close to player
         if (dist < 60) p.life -= dt * 0.8;
       }
     }
 
-    // ── Collect orbs that reach the player ──
+    // ── Collect orbs ──
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       if (p.type === 'orb' && this.activePowerUp === 'magnet') {
@@ -568,23 +493,22 @@ export class Game {
         if (dist < this.player.r + 8) {
           this.score += 1;
           this.magnetOrbs++;
-          if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
+          this.hud.updateScore(this.score);
           soundOrbCollect();
           this.particles.splice(i, 1);
         }
       }
     }
 
-    // ── Update magnet orb count in power-up tag ──
-    if (this.activePowerUp === 'magnet' && this.powerUpTagEl) {
-      const orbSpan = this.powerUpTagEl.querySelector('.pu-orbs');
-      if (orbSpan) orbSpan.textContent = '🪙' + this.magnetOrbs;
+    // ── Update magnet orb count ──
+    if (this.activePowerUp === 'magnet') {
+      this.hud.updatePowerUpOrbsText(String(this.magnetOrbs));
     }
 
     updateParticles(this.particles, dt);
     this.particles = this.particles.filter(p => p.life > 0);
 
-    // ── Autofocus: guide player toward nearest gap center ──
+    // ── Autofocus ──
     if (this.activePowerUp === 'autofocus') {
       let nearestDist = Infinity;
       let targetY = this.player.y;
@@ -598,7 +522,6 @@ export class Game {
       }
       const pull = (targetY - this.player.y) * 1.8;
       this.player.vy += pull * dt;
-      // Cap velocity so it's smooth
       this.player.vy = Math.max(-this.H * 0.5, Math.min(this.H * 0.5, this.player.vy));
     }
 
@@ -630,13 +553,12 @@ export class Game {
     this.breakTimer = BREAK_DURATION;
     this.power = 100;
     this.shakeTime = 0.25;
-    this.powerWrapEl?.classList.add('full');
-    this.breakTagEl?.classList.add('show');
+    this.hud.setPowerBarFull(true);
+    this.hud.showBreakTag();
     soundBreak();
     if (navigator.vibrate) navigator.vibrate(40);
     spawnBreakBurst(this.particles, this.player.x, this.player.y);
-    this.flashOverlayEl?.classList.add('flash');
-    setTimeout(() => this.flashOverlayEl?.classList.remove('flash'), 80);
+    this.hud.quickFlash(80);
   }
 
   private updateObstacles(): void {
@@ -647,14 +569,13 @@ export class Game {
         o.passed = true;
         if (!o.nearCounted) {
           this.combo = 0;
-          this.comboTagEl?.classList.remove('show');
+          this.hud.hideComboTag();
         }
         const points = Math.floor(1 * this.scoreMultiplier);
         this.score += points;
-        if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
+        this.hud.updateScore(this.score);
         this.gainPower(POWER_PASS);
         this.checkRecordCrossing();
-        // Magnet: spawn extra orbs when passing obstacles
         if (this.activePowerUp === 'magnet') {
           spawnMagnetOrbs(this.particles, o.x + o.w, o.gapY + o.gapH / 2, MAGNET_ORBS_PER_PASS);
         }
@@ -672,44 +593,31 @@ export class Game {
               o.passed = true;
               this.score += Math.floor(3 * this.scoreMultiplier);
               this.breakCount++;
-              if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
+              this.hud.updateScore(this.score);
               this.checkRecordCrossing();
             }
             o.broken = true;
             this.shakeTime = 0.18;
             soundBreak();
             if (navigator.vibrate) navigator.vibrate(30);
-            this.flashOverlayEl?.classList.add('flash');
-            setTimeout(() => this.flashOverlayEl?.classList.remove('flash'), 80);
+            this.hud.quickFlash(80);
             spawnShatter(this.particles, o.x, 0, topY, o.w);
             spawnShatter(this.particles, o.x, botY, this.H, o.w);
           } else if (this.activePowerUp === 'shield' || this.activePowerUp === 'plating') {
-            // Shield / Plating absorbs collision
             const isPlating = this.activePowerUp === 'plating';
             if (!isPlating) {
-              // Shield: consumed after 1 hit
               this.activePowerUp = null;
               this.powerUpTimer = 0;
-              if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
-              this.updatePowerUpIndicators();
+              this.hud.hidePowerUpTag();
+              this.hud.updatePowerUpIndicators(null);
             }
             this.shakeTime = 0.15;
             soundBreak();
             if (navigator.vibrate) navigator.vibrate(20);
-            // Visual flash
             const flashRgb = isPlating ? '255,138,101' : '93,186,255';
-            const fel = this.flashOverlayEl;
-            if (fel) {
-              fel.style.background = `rgba(${flashRgb},0.25)`;
-              fel.classList.add('flash');
-              setTimeout(() => {
-                fel.classList.remove('flash');
-                fel.style.background = 'rgba(255,194,77,0.15)';
-              }, 150);
-            }
+            this.hud.flashOverlayCustom(flashRgb, 0.25, '255,194,77', '0.15', 150);
             spawnShatter(this.particles, o.x, 0, topY, o.w);
             spawnShatter(this.particles, o.x, botY, this.H, o.w);
-            // Push player back instead of dying
             this.player.vy = -this.H * 0.3;
           } else if (this.modeType === 'zen') {
             this.player.vy = -this.H * 0.35;
@@ -731,14 +639,13 @@ export class Game {
             const bonus = Math.floor(this.combo * 0.5);
             const addScore = Math.floor((1 + bonus) * this.scoreMultiplier);
             this.score += addScore;
-            if (this.scoreValEl) this.scoreValEl.textContent = String(this.score);
+            this.hud.updateScore(this.score);
             soundNear();
 
-            if (this.combo > 1 && this.comboTagEl) {
-              this.comboTagEl.textContent = 'x' + this.combo;
-              this.comboTagEl.classList.add('show');
+            if (this.combo > 1) {
+              this.hud.showComboTag(this.combo);
             } else {
-              this.comboTagEl?.classList.remove('show');
+              this.hud.hideComboTag();
             }
             spawnNearText(this.particles, this.player.x, this.player.y);
 
@@ -750,18 +657,8 @@ export class Game {
             const nearTop = this.player.y - this.player.r - topY < botY - (this.player.y + this.player.r);
             const edgeY = nearTop ? topY : botY;
             spawnNearBurst(this.particles, edgeX, edgeY, nearTop ? 1 : -1, combo);
-            // Brief flash at the edge — scales with combo
-            const fel = this.flashOverlayEl;
-            if (fel) {
-              const flashAlpha = Math.min(0.12 + combo * 0.008, 0.30);
-              fel.style.background = `rgba(255,194,77,${flashAlpha})`;
-              fel.classList.add('flash');
-              setTimeout(() => {
-                fel.classList.remove('flash');
-                fel.style.background = 'rgba(255,194,77,0.15)';
-              }, Math.min(100 + combo * 5, 200));
-            }
-
+            const flashAlpha = Math.min(0.12 + combo * 0.008, 0.30);
+            this.hud.flashOverlay('255,194,77', flashAlpha, Math.min(100 + combo * 5, 200));
             this.gainPower(POWER_NEAR);
             this.checkRecordCrossing();
           }
@@ -775,26 +672,25 @@ export class Game {
     if (this.recordCrossed || this.targetBest <= 0) return;
     if (this.score >= this.targetBest) {
       this.recordCrossed = true;
-      this.scoreValEl?.classList.add('gold');
-      this.recordBannerEl?.classList.add('show');
+      this.hud.setScoreGold(true);
+      this.hud.showRecordBanner();
       this.shakeTime = Math.max(this.shakeTime, 0.15);
       soundRecord();
       if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-      setTimeout(() => this.recordBannerEl?.classList.remove('show'), 1500);
+      setTimeout(() => this.hud.hideRecordBanner(), 1500);
       spawnRecordBurst(this.particles, this.player.x, this.player.y);
     }
   }
 
   private updateRecordPace(): void {
-    if (!this.recordPaceEl) return;
     if (this.modeType === 'zen') return;
     if (this.targetBest > 0) {
       if (this.recordCrossed) {
-        this.recordPaceEl.textContent = '+' + (this.score - this.targetBest) + ' recorde!';
-        this.recordPaceEl.classList.add('ahead');
+        this.hud.updateRecordPace('+' + (this.score - this.targetBest) + ' recorde!');
+        this.hud.setRecordPaceAhead(true);
       } else {
-        this.recordPaceEl.textContent = 'faltam ' + (this.targetBest - this.score) + ' pro recorde';
-        this.recordPaceEl.classList.remove('ahead');
+        this.hud.updateRecordPace('faltam ' + (this.targetBest - this.score) + ' pro recorde');
+        this.hud.setRecordPaceAhead(false);
       }
     }
   }
@@ -841,7 +737,7 @@ export class Game {
     if (finalNear) finalNear.textContent = String(this.nearCount);
     if (finalBreaks) finalBreaks.textContent = String(this.breakCount);
     if (finalCombo) finalCombo.textContent = String(this.maxCombo);
-    if (this.bestValEl) this.bestValEl.textContent = String(this._currentBest);
+    this.hud.updateBestVal(this._currentBest);
     if (finalTime) finalTime.textContent = String(Math.round(this.tick));
     if (statFalls) statFalls.textContent = String(this.zenFalls);
 
@@ -858,9 +754,8 @@ export class Game {
     }
 
     overScreen?.classList.remove('hidden');
-    if (this.hintEl) this.hintEl.style.opacity = '0';
-    const timerHud = document.getElementById('timerHud');
-    if (timerHud) timerHud.style.display = 'none';
+    this.hud.setHintOpacity('0');
+    this.hud.hideTimerBlock();
 
     if (lbTitle2) {
       lbTitle2.textContent = MODE_LB_TITLES[this.modeType];

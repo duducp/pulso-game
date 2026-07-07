@@ -1,0 +1,27 @@
+{
+  "name": "PULSO",
+  "short_name": "PULSO",
+  "description": "Jogo de reflexo minimalista. Toque para pulsar e desviar das barreiras.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090B10",
+  "theme_color": "#090B10",
+  "categories": ["games", "arcade"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": []
+}

@@ -1,5 +1,6 @@
 import { initAudio, soundNav } from './audio';
-import { MODE_ITEMS, MODE_ICONS, MODE_NAMES, MODE_GLOW, MODE_DESC, PowerUpType } from './types';
+import { MODE_ITEMS, MODE_ICONS, MODE_NAMES, MODE_GLOW, MODE_DESC } from './modes';
+import type { PowerUpType } from './types';
 import { POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
 import { saveName } from './storage';
 import type { Game } from './game';
