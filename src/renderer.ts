@@ -86,13 +86,21 @@ export class Renderer {
       ctx.fillStyle = s.breakMode ? COLORS.gold : COLORS.red;
       if (s.breakMode) {
         ctx.shadowColor = COLORS.gold;
-        ctx.shadowBlur = 14;
+        if (s.breakUrgent) {
+          // Rapid pulsing blink to signal break mode ending
+          const blink = Math.sin(s.tick * 40) * 0.5 + 0.5;
+          ctx.globalAlpha = 0.5 + blink * 0.5;
+          ctx.shadowBlur = 10 + blink * 28;
+        } else {
+          ctx.shadowBlur = 14;
+        }
       } else {
         ctx.shadowBlur = 0;
       }
       this.roundRect(o.x, 0, o.w, o.gapY, 8, true);
       this.roundRect(o.x, o.gapY + o.gapH, o.w, s.H - (o.gapY + o.gapH), 8, true);
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     }
 
     // Power-ups
@@ -221,6 +229,26 @@ export class Renderer {
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.arc(0, 0, s.player.r * 1.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    // Life collection pause — heartbeat blink aura
+    if (s.lifeCollectPauseTimer > 0) {
+      const heartbeat = Math.sin(s.tick * 60) > 0.3 ? 0 : 1; // fast on/off blink
+      const pulse = Math.sin(s.tick * 20) * 0.2 + 0.3;
+      ctx.save();
+      ctx.translate(s.player.x, s.player.y);
+      // Heartbeat ring
+      ctx.globalAlpha = pulse * 0.35;
+      ctx.strokeStyle = COLORS.red;
+      ctx.shadowColor = COLORS.red;
+      ctx.shadowBlur = 32;
+      ctx.lineWidth = heartbeat ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, s.player.r * (1.8 + heartbeat * 0.2), 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;

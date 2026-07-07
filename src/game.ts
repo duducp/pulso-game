@@ -86,6 +86,8 @@ export class Game {
   scoreMultiplier = 1;
   lives = 0;
   invincibleTimer = 0;
+  /** Timer for life collection pause — game freezes + ball blinks */
+  lifeCollectPauseTimer = 0;
   reviveCount = 0;
 
   W: number;
@@ -137,6 +139,7 @@ export class Game {
       combo: this.combo,
       maxCombo: this.maxCombo,
       breakMode: this.breakMode,
+      breakUrgent: this.breakMode && this.breakTimer < BREAK_DURATION * 0.25,
       breakTimer: this.breakTimer,
       shakeTime: this.shakeTime,
       dailyMode: this.dailyMode,
@@ -155,6 +158,7 @@ export class Game {
       lives: this.lives,
       invincibleTimer: this.invincibleTimer,
       reviveCount: this.reviveCount,
+      lifeCollectPauseTimer: this.lifeCollectPauseTimer,
       W: this.W,
       H: this.H,
     };
@@ -190,6 +194,7 @@ export class Game {
     this.scoreMultiplier = 1;
     this.lives = 0;
     this.invincibleTimer = 0;
+    this.lifeCollectPauseTimer = 0;
     this.reviveCount = 0;
 
     // HUD lives display
@@ -364,6 +369,9 @@ export class Game {
           this.hud.updateScore(this.score);
           this.hud.updateLives(this.lives, LIVES_MAX);
           soundLifeCollect();
+          this.lifeCollectPauseTimer = 1.2; // pause + ball blink
+          this.hud.flashOverlay('255,92,108', 0.35, 400);
+          if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
         }
         return; // Don't show power-up tag for life
     }
@@ -376,7 +384,15 @@ export class Game {
 
   update(dt: number): void {
     if (this.paused) return;
+
+    // Tick always advances so renderer animations (blink, glow) keep running
     this.tick += dt;
+
+    // ── Life collection pause — freeze game, let ball blink ──
+    if (this.lifeCollectPauseTimer > 0) {
+      this.lifeCollectPauseTimer -= dt;
+      return;
+    }
 
     // ── Power-up timer ──
     if (this.activePowerUp && this.powerUpTimer > 0) {
@@ -495,6 +511,11 @@ export class Game {
         this.hud.setPowerBarFull(false);
         this.hud.setPowerBarUrgent(false);
         this.hud.hideBreakTag();
+        this._urgentPlayed = false; // reset flag so next break mode can play urgent sound
+        // Brief invincibility + flash to prevent instant death on obstacle player was about to break
+        this.invincibleTimer = Math.max(this.invincibleTimer, 0.3);
+        this.shakeTime = Math.max(this.shakeTime, 0.15);
+        this.hud.flashOverlay('255,92,108', 0.25, 250, '0');
       }
     }
     if (this.shakeTime > 0) this.shakeTime -= dt;
@@ -624,7 +645,7 @@ export class Game {
     // Show "reviveu!" text — set text BEFORE showing to avoid flash of wrong value
     const comboEl = document.getElementById('comboTag');
     if (comboEl) {
-      comboEl.textContent = 'reviveu! 💓';
+      comboEl.textContent = 'reviveu! ❤️';
       comboEl.classList.add('show');
     }
     setTimeout(() => this.hud.hideComboTag(), 600);

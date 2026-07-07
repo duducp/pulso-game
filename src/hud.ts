@@ -244,7 +244,7 @@ export class HudManager {
   // ─── Lives HUD ────────────────────────────────────────────
   updateLives(lives: number, max: number): void {
     if (this.livesHeartsEl) {
-      this.livesHeartsEl.textContent = '💓'.repeat(lives);
+      this.livesHeartsEl.textContent = '❤️'.repeat(lives);
     }
     if (this.livesTextEl) {
       this.livesTextEl.textContent = 'x' + lives;

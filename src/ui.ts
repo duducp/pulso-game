@@ -1,4 +1,4 @@
-import type { LeaderboardEntry, GameModeType } from './types';
+import type { LeaderboardEntry } from './types';
 
 export function escapeHtml(s: string): string {
   const map: Record<string, string> = {
@@ -47,48 +47,4 @@ export function renderLBInto(
     .join('');
 }
 
-export function showToast(duration = 1800): void {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), duration);
-}
 
-export function getShareText(
-  score: number,
-  currentBest: number,
-  modeType: GameModeType,
-  breakCount: number,
-  maxCombo: number,
-  lastRank: number | null,
-  playTime?: number,
-): string {
-  const breaksTxt =
-    breakCount > 0
-      ? ' e quebrei ' +
-        breakCount +
-        ' parede' +
-        (breakCount > 1 ? 's' : '') +
-        ' no modo ruptura 💥'
-      : '';
-  const comboText = maxCombo > 1 ? ' (maior combo: x' + maxCombo + ')' : '';
-  const rankTxt = lastRank ? ' — #' + lastRank + ' no ranking' : '';
-  const url = window.location.href;
-
-  const modePrefixes: Record<GameModeType, string> = {
-    free: '💓 Fiz ' + score + ' pulsos no PULSO (recorde: ' + currentBest + ')',
-    daily: '💓 Desafio de hoje no PULSO: ' + score + ' pulsos',
-    timed: '💓 Modo cronometrado: ' + score + ' pulsos em 30s (recorde: ' + currentBest + ')',
-    survival: '💓 Modo sobrevivência: ' + score + ' pulsos (recorde: ' + currentBest + ')',
-    zen: '💓 Modo zen no PULSO: ' + score + ' pulsos em ' + (playTime ?? 0) + 's',
-  };
-
-  return (
-    modePrefixes[modeType] +
-    comboText +
-    breaksTxt +
-    rankTxt +
-    '. Bate meu recorde: ' +
-    url
-  );
-}

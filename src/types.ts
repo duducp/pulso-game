@@ -79,6 +79,7 @@ export interface GameState {
   combo: number;
   maxCombo: number;
   breakMode: boolean;
+  breakUrgent: boolean;
   breakTimer: number;
   shakeTime: number;
   dailyMode: boolean;
@@ -96,6 +97,7 @@ export interface GameState {
   scoreMultiplier: number;
   lives: number;
   invincibleTimer: number;
+  lifeCollectPauseTimer: number;
   reviveCount: number;
   W: number;
   H: number;

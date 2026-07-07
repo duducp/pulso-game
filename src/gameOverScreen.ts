@@ -1,5 +1,4 @@
 import { initAudio } from './audio';
-import { getShareText, showToast } from './ui';
 import { MODE_GAMEOVER_LABELS, MODE_LB_TITLES } from './modes';
 import { todayStr } from './rng';
 import type { GameModeType } from './types';
@@ -71,23 +70,6 @@ export function initGameOverScreen(
     game.beginRun(game.modeType);
     startLoop();
     canvas.focus();
-  });
-
-  document.getElementById('shareBtn')!.addEventListener('click', () => {
-    const text = getShareText(
-      game.score,
-      game.currentBest,
-      game.modeType,
-      game.breakCount,
-      game.maxCombo,
-      game.lastRank,
-      Math.round(game.tick),
-    );
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => showToast()).catch(() => showToast());
-    } else {
-      showToast();
-    }
   });
 
   document.getElementById('menuBtn')!.addEventListener('click', () => {
