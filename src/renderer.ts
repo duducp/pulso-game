@@ -13,8 +13,8 @@ export class Renderer {
 
   resize(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.W = this.canvas.clientWidth;
-    this.H = this.canvas.clientHeight;
+    this.W = window.innerWidth;
+    this.H = window.innerHeight;
     this.canvas.width = this.W * dpr;
     this.canvas.height = this.H * dpr;
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

@@ -18,13 +18,24 @@ const lbList = document.getElementById('lbList')!;
 // ─── Initialize core systems ──────────────────────────────
 const renderer = new Renderer(canvas);
 
+/** Ensure minimum dimensions — Safari can report 0 on first paint */
+function safeDims(w: number, h: number): [number, number] {
+  if (w > 0 && h > 0) return [w, h];
+  // Fallback: use window inner dimensions, which are reliable across browsers
+  return [window.innerWidth, window.innerHeight];
+}
+
 function resize(): void {
   renderer.resize();
-  if (game) game.setDimensions(canvas.clientWidth, canvas.clientHeight);
+  if (game) {
+    const [w, h] = safeDims(canvas.clientWidth, canvas.clientHeight);
+    game.setDimensions(w, h);
+  }
 }
 window.addEventListener('resize', resize);
 
-const game = new Game(canvas.clientWidth, canvas.clientHeight);
+const [initW, initH] = safeDims(canvas.clientWidth, canvas.clientHeight);
+const game = new Game(initW, initH);
 const input = new InputManager(game);
 
 resize();

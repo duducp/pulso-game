@@ -5,7 +5,7 @@ import type { PowerUpType } from './types';
 import type { Game } from './game';
 
 // ─── Power-up types ────────────────────────────────────
-const PU_TYPES: Array<keyof typeof POWERUP_ICONS> = ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
+const PU_TYPES: Array<keyof typeof POWERUP_ICONS> = ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
 
 let puModalIdx = 0;
 
