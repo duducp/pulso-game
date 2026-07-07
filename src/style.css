@@ -34,6 +34,7 @@ html, body {
   align-items: center;
   justify-content: center;
   background: var(--bg);
+  overscroll-behavior: none;
 }
 
 canvas {
@@ -275,7 +276,7 @@ canvas {
   justify-content: center;
   flex-direction: column;
   text-align: center;
-  background: rgba(9, 11, 16, 0.78);
+  background: rgba(9, 11, 16, 0.92);
   padding: 20px;
   overflow-y: auto;
   z-index: 100;
