@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from './types';
+import type { LeaderboardEntry, GameModeType } from './types';
 
 export function escapeHtml(s: string): string {
   const map: Record<string, string> = {
@@ -53,8 +53,6 @@ export function showToast(duration = 1800): void {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), duration);
 }
-
-import type { GameModeType } from './types';
 
 export function getShareText(
   score: number,

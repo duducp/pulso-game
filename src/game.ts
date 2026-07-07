@@ -11,7 +11,7 @@ import {
   POWERUP_FREEZE_DURATION, POWERUP_PLATING_DURATION, POWERUP_AUTOFOCUS_DURATION,
   POWERUP_WEIGHTS, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_FLASH_COLORS,
 } from './powerups';
-import { MODE_LABELS, MODE_GAMEOVER_LABELS, MODE_LB_TITLES, MODE_BEST_KEYS } from './modes';
+import { MODE_LABELS, MODE_BEST_KEYS } from './modes';
 import { xmur3, mulberry32, todayStr } from './rng';
 import {
   spawnRing,
@@ -40,6 +40,8 @@ import {
 } from './audio';
 import { submitScore, loadBestRecord, saveBestRecord } from './storage';
 import { renderLBInto } from './ui';
+import { renderGameOverStats } from './gameOverScreen';
+import { updatePlayerPhysics, moveObstacle, movePowerUp } from './physics';
 import { HudManager } from './hud';
 
 export class Game {
@@ -410,10 +412,7 @@ export class Game {
 
     // ── Power-ups movement ──
     for (const pu of this.powerUps) {
-      if (!pu.collected) {
-        pu.x -= this.speed * STEP;
-        pu.phase += dt;
-      }
+      movePowerUp(pu, this.speed, dt);
     }
     this.powerUps = this.powerUps.filter(p => p.x > -40 && !p.collected);
 
@@ -429,9 +428,11 @@ export class Game {
     }
 
     // ── Player physics ──
-    this.player.vy += this.H * 1.55 * dt;
-    this.player.y += this.player.vy * dt;
-    this.player.rot = Math.max(-0.5, Math.min(1.1, this.player.vy / 900));
+    const { vy, y, rot } = updatePlayerPhysics(this.player, this.H, dt);
+    this.player.vy = vy;
+    this.player.y = y;
+    this.player.rot = rot;
+
     if (this.player.y - this.player.r < 0) {
       this.player.y = this.player.r;
       this.player.vy = 0;
@@ -563,7 +564,7 @@ export class Game {
 
   private updateObstacles(): void {
     for (const o of this.obstacles) {
-      o.x -= this.speed * STEP;
+      moveObstacle(o, this.speed);
 
       if (!o.passed && o.x + o.w < this.player.x - this.player.r) {
         o.passed = true;
@@ -716,51 +717,27 @@ export class Game {
 
     this._currentBest = this.getCurrentBest();
 
-    const finalScore = document.getElementById('finalScore');
-    const finalBest = document.getElementById('finalBest');
-    const finalBpm = document.getElementById('finalBpm');
-    const finalNear = document.getElementById('finalNear');
-    const finalBreaks = document.getElementById('finalBreaks');
-    const finalCombo = document.getElementById('finalCombo');
-    const finalTime = document.getElementById('finalTime');
-    const overLabel = document.getElementById('overLabel');
+    // ── Render game over screen stats (extracted) ──
+    renderGameOverStats({
+      score: this.score,
+      currentBest: this._currentBest,
+      bpm: this.bpm,
+      nearCount: this.nearCount,
+      breakCount: this.breakCount,
+      maxCombo: this.maxCombo,
+      tick: this.tick,
+      zenFalls: this.zenFalls,
+      modeType: this.modeType,
+    });
+    this.hud.updateBestVal(this._currentBest);
+
+    const overScreen = document.getElementById('overScreen');
     const rankLine = document.getElementById('rankLine');
     const lbList2 = document.getElementById('lbList2');
-    const lbTitle2 = document.getElementById('lbTitle2');
-    const overScreen = document.getElementById('overScreen');
-    const statTime = document.getElementById('statTime');
-    const statFalls = document.getElementById('statFalls');
-
-    if (finalScore) finalScore.textContent = String(this.score);
-    if (finalBest) finalBest.textContent = String(this._currentBest);
-    if (finalBpm) finalBpm.textContent = String(Math.round(this.bpm));
-    if (finalNear) finalNear.textContent = String(this.nearCount);
-    if (finalBreaks) finalBreaks.textContent = String(this.breakCount);
-    if (finalCombo) finalCombo.textContent = String(this.maxCombo);
-    this.hud.updateBestVal(this._currentBest);
-    if (finalTime) finalTime.textContent = String(Math.round(this.tick));
-    if (statFalls) statFalls.textContent = String(this.zenFalls);
-
-    if (statTime) statTime.style.display = this.modeType === 'zen' ? 'flex' : 'none';
-    if (statFalls) statFalls.style.display = this.modeType === 'zen' ? 'flex' : 'none';
-
-    if (overLabel) {
-      const base = MODE_GAMEOVER_LABELS[this.modeType];
-      if (this.modeType === 'daily') {
-        overLabel.textContent = 'desafio de ' + todayStr().slice(5, 10).replace('-', '/');
-      } else {
-        overLabel.textContent = base;
-      }
-    }
 
     overScreen?.classList.remove('hidden');
     this.hud.setHintOpacity('0');
     this.hud.hideTimerBlock();
-
-    if (lbTitle2) {
-      lbTitle2.textContent = MODE_LB_TITLES[this.modeType];
-      lbTitle2.style.display = this.modeType === 'zen' ? 'none' : 'block';
-    }
 
     if (rankLine) rankLine.textContent = 'Salvando no ranking...';
     if (lbList2) lbList2.innerHTML = '<div class="lbempty">carregando...</div>';
