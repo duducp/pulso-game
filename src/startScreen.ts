@@ -109,7 +109,7 @@ export function initStartScreen(
   // ── Build power-up HUD indicators ──
   const indicatorsEl = document.getElementById('powerUpIndicators');
   if (indicatorsEl) {
-    ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'].forEach((type) => {
+    ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus', 'life'].forEach((type) => {
       const div = document.createElement('div');
       div.className = 'pu-indicator';
       div.dataset.type = type;
@@ -188,7 +188,7 @@ export function initStartScreen(
 
   // ── Build power-up icons ──
   if (puEl) {
-    const allPwuTypes: Array<keyof typeof POWERUP_ICONS> = ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
+    const allPwuTypes: Array<keyof typeof POWERUP_ICONS> = ['shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus', 'life'];
     allPwuTypes.forEach((type) => {
       const span = document.createElement('span');
       span.className = 'mp-icon';

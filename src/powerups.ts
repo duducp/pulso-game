@@ -42,7 +42,7 @@ export const POWERUP_ICONS: Record<string, string> = {
   freeze: '❄️',
   plating: '🔰',
   autofocus: '🎯',
-  life: '💓',
+  life: '❤️',
 };
 
 export const POWERUP_NAMES: Record<string, string> = {
