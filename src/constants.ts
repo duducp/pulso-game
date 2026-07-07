@@ -1,13 +1,13 @@
 // ─── Game Constants ────────────────────────────────────────
 
 /** Points gained for passing through an obstacle. */
-export const POWER_PASS = 16;
+export const POWER_PASS = 12;
 
 /** Points gained for a near-miss pass. */
-export const POWER_NEAR = 30;
+export const POWER_NEAR = 24;
 
 /** Duration of break mode in seconds. */
-export const BREAK_DURATION = 3.2;
+export const BREAK_DURATION = 5;
 
 /** Fixed timestep for the game loop (1/120 s). */
 export const STEP = 1 / 120;

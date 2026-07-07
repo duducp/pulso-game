@@ -12,7 +12,7 @@ import {
   POWERUP_FREEZE_DURATION, POWERUP_PLATING_DURATION, POWERUP_AUTOFOCUS_DURATION,
   POWERUP_WEIGHTS, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_FLASH_COLORS,
 } from './powerups';
-import { MODE_LABELS, MODE_BEST_KEYS } from './modes';
+
 import { xmur3, mulberry32, todayStr } from './rng';
 import {
   spawnRing,
@@ -43,11 +43,12 @@ import {
   soundLifeCollect,
   isSoundEnabled,
 } from './audio';
-import { submitScore, loadBestRecord, saveBestRecord } from './storage';
+import { submitScore } from './storage';
 import { renderLBInto } from './ui';
 import { renderGameOverStats } from './gameOverScreen';
 import { updatePlayerPhysics, moveObstacle, movePowerUp } from './physics';
 import { HudManager } from './hud';
+import { ScoreManager } from './score';
 
 export class Game {
   // ─── Public state ────────────────────────────────────────
@@ -93,16 +94,12 @@ export class Game {
   // ─── HUD Manager (DOM abstraction) ──────────────────────
   hud: HudManager;
 
+  // ─── Score / Record Manager ─────────────────────────────
+  scoring: ScoreManager;
+
   // ─── Internal ────────────────────────────────────────────
   private lastSpawn = 0;
   private rng: () => number = Math.random;
-  // Best scores — store { score, date } so we can show when the record was set
-  private bestFree: { score: number; date: string | null } = { score: 0, date: null };
-  private bestDailyToday: { score: number; date: string | null } = { score: 0, date: null };
-  private bestTimed: { score: number; date: string | null } = { score: 0, date: null };
-  private bestSurvival: { score: number; date: string | null } = { score: 0, date: null };
-  private _lastRank: number | null = null;
-  private _currentBest = 0;
   /** Whether the urgent beep has been played for the current break mode */
   private _urgentPlayed = false;
 
@@ -112,6 +109,7 @@ export class Game {
     this.W = W;
     this.H = H;
     this.hud = new HudManager();
+    this.scoring = new ScoreManager();
     this.reset();
   }
 
@@ -210,47 +208,28 @@ export class Game {
   }
 
   async loadPersistedData(): Promise<void> {
-    const [bestFree, bestDaily, bestTimed, bestSurvival] = await Promise.all([
-      loadBestRecord('profile:best:free'),
-      loadBestRecord('profile:best:daily:' + todayStr()),
-      loadBestRecord('profile:best:timed'),
-      loadBestRecord('profile:best:survival'),
-    ]);
-    this.bestFree = bestFree;
-    this.bestDailyToday = bestDaily;
-    this.bestTimed = bestTimed;
-    this.bestSurvival = bestSurvival;
+    await this.scoring.loadPersistedData();
   }
 
   getModeLabel(): string {
-    const base = MODE_LABELS[this.modeType];
-    if (this.modeType === 'daily') {
-      return base + ' · ' + todayStr().slice(5, 10).replace('-', '/');
-    }
-    return base;
+    return this.scoring.getModeLabel(this.modeType);
   }
 
   getBestKey(): string {
-    const base = MODE_BEST_KEYS[this.modeType];
-    if (this.modeType === 'daily') {
-      return base + todayStr();
-    }
-    return base;
+    return this.scoring.getBestKey(this.modeType);
   }
 
   getLBKey(): string {
-    return this.getBestKey().replace('profile:best:', 'lb:');
+    return this.scoring.getLBKey(this.modeType);
   }
 
   beginRun(mode: GameModeType): void {
     this.modeType = mode;
     this.dailyMode = mode === 'daily';
 
-    if (mode === 'free') this.targetBest = this.bestFree.score;
-    else if (mode === 'daily') this.targetBest = this.bestDailyToday.score;
-    else if (mode === 'timed') this.targetBest = this.bestTimed.score;
-    else if (mode === 'survival') this.targetBest = this.bestSurvival.score;
-    else this.targetBest = 0;
+    this.scoring.setModeType(mode);
+    this.scoring.reset();
+    this.targetBest = this.scoring.getTargetBestForMode(mode);
 
     this.timeRemaining = mode === 'timed' ? TIMED_DURATION : 0;
     this.reset();
@@ -268,7 +247,7 @@ export class Game {
     startScreen?.classList.add('hidden');
     overScreen?.classList.add('hidden');
 
-    this.hud.updateModeTag(this.getModeLabel());
+    this.hud.updateModeTag(this.scoring.getModeLabel(this.modeType));
     this.hud.updateBestVal(this.targetBest);
 
     if (mode === 'timed') {
@@ -681,7 +660,7 @@ export class Game {
           if (this.breakMode) {
             if (!o.passed) {
               o.passed = true;
-              this.score += Math.floor(3 * this.scoreMultiplier);
+              this.score += Math.floor(5 * this.scoreMultiplier);
               this.breakCount++;
               this.hud.updateScore(this.score);
               this.checkRecordCrossing();
@@ -802,21 +781,13 @@ export class Game {
       if (navigator.vibrate) navigator.vibrate(60);
     }
 
-    const bestKey = this.getBestKey();
-    if (bestKey) {
-      const today = todayStr();
-      if (this.modeType === 'free' && this.score > this.bestFree.score) { this.bestFree = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
-      else if (this.modeType === 'daily' && this.score > this.bestDailyToday.score) { this.bestDailyToday = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
-      else if (this.modeType === 'timed' && this.score > this.bestTimed.score) { this.bestTimed = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
-      else if (this.modeType === 'survival' && this.score > this.bestSurvival.score) { this.bestSurvival = { score: this.score, date: today }; saveBestRecord(bestKey, this.score, today); }
-    }
-
-    this._currentBest = this.getCurrentBest();
+    this.scoring.saveBestIfNeeded(this.score, this.modeType);
+    this.scoring.currentBest = this.scoring.getCurrentBest(this.modeType);
 
     // ── Render game over screen stats (extracted) ──
     renderGameOverStats({
       score: this.score,
-      currentBest: this._currentBest,
+      currentBest: this.scoring.currentBest,
       bpm: this.bpm,
       nearCount: this.nearCount,
       breakCount: this.breakCount,
@@ -826,7 +797,7 @@ export class Game {
       reviveCount: this.reviveCount,
       modeType: this.modeType,
     });
-    this.hud.updateBestVal(this._currentBest);
+    this.hud.updateBestVal(this.scoring.currentBest);
 
     const overScreen = document.getElementById('overScreen');
     const rankLine = document.getElementById('rankLine');
@@ -850,40 +821,25 @@ export class Game {
         if (lbList) renderLBInto(lbList, list, ts);
         const idx = list.findIndex(e => e.t === ts);
         if (rankLine) rankLine.textContent = idx >= 0 ? 'Você ficou em #' + (idx + 1) + ' no ranking!' : 'Fora do top 20 — tenta de novo!';
-        this._lastRank = idx >= 0 ? idx + 1 : null;
+        this.scoring.lastRank = idx >= 0 ? idx + 1 : null;
       } else {
         if (rankLine) rankLine.textContent = '';
         if (lbList2) lbList2.innerHTML = '<div class="lbempty">não foi possível carregar o ranking.</div>';
-        this._lastRank = null;
+        this.scoring.lastRank = null;
       }
     } else {
       if (rankLine) rankLine.textContent = 'Você jogou por ' + Math.round(this.tick) + ' segundos.';
       if (lbList2) lbList2.innerHTML = '<div class="lbempty">Modo zen não tem ranking — só diversão.</div>';
-      this._lastRank = null;
+      this.scoring.lastRank = null;
     }
     this.onGameOver?.();
   }
 
-  private getCurrentBest(): number {
-    switch (this.modeType) {
-      case 'free': return this.bestFree.score;
-      case 'daily': return this.bestDailyToday.score;
-      case 'timed': return this.bestTimed.score;
-      case 'survival': return this.bestSurvival.score;
-      default: return this.score;
-    }
-  }
-
-  get lastRank(): number | null { return this._lastRank; }
-  get currentBest(): number { return this._currentBest; }
+  get lastRank(): number | null { return this.scoring.lastRank; }
+  get currentBest(): number { return this.scoring.currentBest; }
 
   /** Expose best scores + dates for the start-screen stats row */
-  getBestScores(): { free: { score: number; date: string | null }; daily: { score: number; date: string | null }; timed: { score: number; date: string | null }; survival: { score: number; date: string | null } } {
-    return {
-      free: this.bestFree,
-      daily: this.bestDailyToday,
-      timed: this.bestTimed,
-      survival: this.bestSurvival,
-    };
+  getBestScores(): ReturnType<ScoreManager['getBestScores']> {
+    return this.scoring.getBestScores();
   }
 }

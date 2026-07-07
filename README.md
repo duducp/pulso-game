@@ -60,6 +60,7 @@ make preview
 │   ├── ui.ts               # leaderboard DOM, share text
 │   ├── input.ts            # eventos touch / teclado + helper onSwipe
 │   ├── rng.ts              # RNG com seed (modo diário)
+│   ├── score.ts            # ScoreManager — recordes e persistência
 │   ├── powerups.ts         # dados e constantes de power-ups
 │   ├── startScreen.ts      # tela inicial (carrossel + stats)
 │   ├── carousel.ts         # carrossel de seleção de modo
