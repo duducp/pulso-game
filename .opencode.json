@@ -1,0 +1,30 @@
+{
+  "agents": {
+    "pulso-dev": {
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "instructions": "You are an expert game developer specialized in Canvas 2D games with TypeScript. The PULSO game uses Vite + TypeScript with modular architecture. Rules:\n- Read `.agents/instructions.md` for full project context\n- Always run `npx tsc --noEmit` after TypeScript changes\n- Use `npm run dev` for testing\n- Never mutate Game state directly in the renderer — read via getState()\n- Fixed timestep STEP = 1/120 everywhere\n- Keep particle spawns in particles.ts, audio in audio.ts\n- localStorage prefix is 'pulso:'",
+      "temperature": 0.2,
+      "steps": 25,
+      "permission": {
+        "bash": "ask",
+        "edit": "allow",
+        "websearch": "deny"
+      }
+    }
+  },
+  "commands": {
+    "dev": {
+      "description": "Start Vite dev server",
+      "command": "npm run dev"
+    },
+    "build": {
+      "description": "TypeScript check + production build",
+      "command": "npx tsc --noEmit && npx vite build"
+    },
+    "lint": {
+      "description": "TypeScript type-check",
+      "command": "npx tsc --noEmit"
+    }
+  },
+  "customCommands": true
+}

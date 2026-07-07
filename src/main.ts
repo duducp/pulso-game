@@ -2,7 +2,7 @@ import './style.css';
 import { Game } from './game';
 import { Renderer } from './renderer';
 import { InputManager } from './input';
-import { initAudio } from './audio';
+import { initAudio, setSoundEnabled, isSoundEnabled } from './audio';
 import { renderLBInto, showToast, getShareText } from './ui';
 import { loadName, saveName, loadList } from './storage';
 import { todayStr } from './rng';
@@ -47,21 +47,21 @@ nameInput.addEventListener('blur', () => {
 });
 
 // ─── Button bindings ──────────────────────────────────────
-document.getElementById('dailyBtn')!.addEventListener('click', () => {
+function startMode(mode: import('./types').GameModeType): void {
   initAudio();
-  game.beginRun(true);
+  game.beginRun(mode);
   startLoop();
-});
+}
 
-document.getElementById('freeBtn')!.addEventListener('click', () => {
-  initAudio();
-  game.beginRun(false);
-  startLoop();
-});
+document.getElementById('dailyBtn')!.addEventListener('click', () => startMode('daily'));
+document.getElementById('freeBtn')!.addEventListener('click', () => startMode('free'));
+document.getElementById('timedBtn')!.addEventListener('click', () => startMode('timed'));
+document.getElementById('survivalBtn')!.addEventListener('click', () => startMode('survival'));
+document.getElementById('zenBtn')!.addEventListener('click', () => startMode('zen'));
 
 document.getElementById('retryBtn')!.addEventListener('click', () => {
   initAudio();
-  game.beginRun(game.dailyMode);
+  game.beginRun(game.modeType);
   startLoop();
 });
 
@@ -69,10 +69,11 @@ document.getElementById('shareBtn')!.addEventListener('click', () => {
   const text = getShareText(
     game.score,
     game.currentBest,
-    game.dailyMode,
+    game.modeType,
     game.breakCount,
     game.maxCombo,
     game.lastRank,
+    Math.round(game.tick),
   );
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => showToast()).catch(() => showToast());
@@ -80,6 +81,51 @@ document.getElementById('shareBtn')!.addEventListener('click', () => {
     showToast();
   }
 });
+
+// ─── Pause screen buttons ─────────────────────────────────
+const pauseScreen = document.getElementById('pauseScreen')!;
+
+function closePauseOverlay(): void {
+  pauseScreen.classList.remove('visible');
+  setTimeout(() => {
+    game.paused = false;
+    game.mode = 'playing';
+    document.getElementById('wrap')?.classList.remove('paused');
+  }, 250);
+}
+
+document.getElementById('resumeBtn')!.addEventListener('click', () => {
+  closePauseOverlay();
+});
+
+document.getElementById('restartBtn')!.addEventListener('click', () => {
+  pauseScreen.classList.remove('visible');
+  document.getElementById('wrap')?.classList.remove('paused');
+  game.paused = false;
+  initAudio();
+  game.beginRun(game.modeType);
+  startLoop();
+});
+
+document.getElementById('quitBtn')!.addEventListener('click', () => {
+  pauseScreen.classList.remove('visible');
+  document.getElementById('wrap')?.classList.remove('paused');
+  game.paused = false;
+  game.mode = 'menu';
+  document.getElementById('startScreen')?.classList.remove('hidden');
+  game.reset();
+  rafId = requestAnimationFrame(idleLoop);
+});
+
+const soundToggleBtn = document.getElementById('soundToggleBtn')!;
+function updateSoundToggleUI(): void {
+  soundToggleBtn.textContent = isSoundEnabled() ? '🔊 Som: ligado' : '🔇 Som: desligado';
+}
+soundToggleBtn.addEventListener('click', () => {
+  setSoundEnabled(!isSoundEnabled());
+  updateSoundToggleUI();
+});
+updateSoundToggleUI();
 
 // ─── Game loop ────────────────────────────────────────────
 let last = 0;

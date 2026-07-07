@@ -82,7 +82,7 @@ export class Renderer {
 
     // Obstacles
     for (const o of s.obstacles) {
-      ctx.fillStyle = s.breakMode ? COLORS.gold : COLORS.coral;
+      ctx.fillStyle = s.breakMode ? COLORS.gold : COLORS.red;
       if (s.breakMode) {
         ctx.shadowColor = COLORS.gold;
         ctx.shadowBlur = 14;

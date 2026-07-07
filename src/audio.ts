@@ -1,5 +1,15 @@
 // ─── Audio Context (lazy singleton) ────────────────────────
 let audioCtx: AudioContext | null = null;
+let soundEnabled = true;
+
+export function setSoundEnabled(enabled: boolean): void {
+  soundEnabled = enabled;
+}
+
+export function isSoundEnabled(): boolean {
+  return soundEnabled;
+}
+
 
 export function initAudio(): void {
   if (audioCtx) return;
@@ -7,7 +17,7 @@ export function initAudio(): void {
 }
 
 function playTone(freq: number, duration: number, type: OscillatorType, volume = 0.15): void {
-  if (!audioCtx) return;
+  if (!audioCtx || !soundEnabled) return;
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -46,4 +56,14 @@ export function soundGameOver(): void {
 
 export function soundNear(): void {
   playTone(800, 0.06, 'sine', 0.06);
+}
+
+export function soundPause(): void {
+  playTone(300, 0.15, 'sine', 0.04);
+  setTimeout(() => playTone(250, 0.2, 'sine', 0.03), 80);
+}
+
+export function soundUnpause(): void {
+  playTone(350, 0.1, 'sine', 0.03);
+  setTimeout(() => playTone(420, 0.15, 'sine', 0.04), 60);
 }

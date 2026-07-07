@@ -2,10 +2,12 @@
   --bg: #090B10;
   --line: #1B2130;
   --cyan: #4DF0E0;
-  --coral: #FF5C6C;
+  --red: #FF5C6C;
   --gold: #FFC24D;
   --ink: #E9EDF2;
-  --dim: #5A6478;
+  --dim: #7C8AA0;
+  --purple: #A78BFA;
+  --orange: #FB923C;
 }
 
 * {
@@ -39,6 +41,11 @@ canvas {
   touch-action: none;
   width: 100%;
   height: 100%;
+  transition: filter 0.25s ease;
+}
+
+.paused canvas {
+  filter: blur(5px);
 }
 
 /* ─── HUD ──────────────────────────────────────────────── */
@@ -271,7 +278,7 @@ canvas {
   font-family: ui-monospace, monospace;
   font-size: 11px;
   letter-spacing: 4px;
-  color: var(--coral);
+  color: var(--red);
   text-transform: uppercase;
   margin-bottom: 8px;
 }
@@ -344,6 +351,12 @@ button {
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
+@media (hover: hover) {
+  button:hover {
+    filter: brightness(1.1);
+  }
+}
+
 button:active {
   transform: scale(0.94);
 }
@@ -364,6 +377,24 @@ button:active {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
+}
+
+.timedBtn {
+  background: var(--red);
+  color: #1A0508;
+  box-shadow: 0 0 30px rgba(255, 92, 108, 0.3);
+}
+
+.survivalBtn {
+  background: var(--orange);
+  color: #1A0800;
+  box-shadow: 0 0 30px rgba(251, 146, 60, 0.25);
+}
+
+.zenBtn {
+  background: var(--purple);
+  color: #0C001A;
+  box-shadow: 0 0 30px rgba(167, 139, 250, 0.25);
 }
 
 /* ─── Leaderboard ───────────────────────────────────────── */
@@ -419,6 +450,14 @@ button:active {
   line-height: 1;
 }
 
+.pause-bignum {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
 .label {
   font-family: ui-monospace, monospace;
   font-size: 11px;
@@ -430,7 +469,7 @@ button:active {
 
 .row {
   display: flex;
-  gap: 28px;
+  gap: 18px;
   margin: 14px 0 18px;
   flex-wrap: wrap;
   justify-content: center;
@@ -453,6 +492,57 @@ button:active {
   color: var(--gold);
   margin-bottom: 8px;
   min-height: 18px;
+}
+
+/* ─── Timer HUD ─────────────────────────────────────────── */
+
+#timerHud {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  pointer-events: none;
+}
+
+#timerHud .label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--dim);
+}
+
+#timerVal {
+  font-size: 36px;
+  color: var(--red);
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1;
+}
+
+/* ─── Pause Screen ──────────────────────────────────────── */
+
+#pauseScreen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.92);
+  transition: opacity 0.2s ease, transform 0.25s ease, visibility 0s 0.25s;
+}
+
+#pauseScreen.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: scale(1);
+  transition: opacity 0.2s ease, transform 0.25s ease, visibility 0s;
+}
+
+#pauseScreen .modebtns {
+  gap: 12px;
+}
+
+#pauseScreen .bignum {
+  line-height: 1.2;
 }
 
 /* ─── Toast ─────────────────────────────────────────────── */

@@ -25,5 +25,9 @@ export class InputManager {
       e.preventDefault();
       this.game.pulse();
     }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      this.game.togglePause();
+    }
   }
 }
