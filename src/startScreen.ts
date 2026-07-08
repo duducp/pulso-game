@@ -202,13 +202,8 @@ export function initStartScreen(
     });
   }
 
-  // ── Play button ──
-  document.getElementById('playBtn')!.addEventListener('click', () => {
-    startSelectedMode(game, startLoop, startScreen);
-  });
-
   // ── Init carousel (build buttons + dots + wheel/swipe + initial paint) ──
-  initCarousel(modeSelector, dotsEl, game, (v) => { touchSwiped = v; });
+  initCarousel(modeSelector, dotsEl, game, (v) => { touchSwiped = v; }, () => startSelectedMode(game, startLoop, startScreen));
 
   // ── Power-up modal (extracted to puModal.ts) ──
   initPuModal(startScreen, () => MODE_ITEMS[selectedIdx]);

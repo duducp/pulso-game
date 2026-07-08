@@ -91,6 +91,7 @@ export function initCarousel(
   dotsEl: HTMLElement | null,
   game: Game,
   onTouchSwiped: (v: boolean) => void,
+  onPlay?: () => void,
 ): void {
   // ── Build carousel buttons ──
   let swipeGuard = false;
@@ -107,6 +108,7 @@ export function initCarousel(
       e.stopPropagation();
       if (swipeGuard) { swipeGuard = false; return; }
       focusMode(i, game);
+      onPlay?.();
     });
     modeSelector.appendChild(btn);
   });
