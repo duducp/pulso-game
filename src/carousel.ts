@@ -90,8 +90,6 @@ export function initCarousel(
   modeSelector: Element,
   dotsEl: HTMLElement | null,
   game: Game,
-  startLoop: () => void,
-  startScreen: HTMLElement,
   onTouchSwiped: (v: boolean) => void,
 ): void {
   // ── Build carousel buttons ──
@@ -104,10 +102,10 @@ export function initCarousel(
     btn.tabIndex = 0;
     btn.style.setProperty('--mode-rgb', MODE_GLOW[mode]);
     btn.innerHTML = `<span class="mo-icon">${MODE_ICONS[mode]}</span><span class="mo-label">${MODE_NAMES[mode]}</span>`;
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (swipeGuard) { swipeGuard = false; return; }
       focusMode(i, game);
-      startSelectedMode(game, startLoop, startScreen);
     });
     modeSelector.appendChild(btn);
   });
@@ -120,6 +118,18 @@ export function initCarousel(
       dotsEl.appendChild(dot);
     });
   }
+
+  // ── Click zones on mode-selector ──
+  modeSelector.addEventListener('click', (e: Event) => {
+    const me = e as MouseEvent;
+    const rect = modeSelector.getBoundingClientRect();
+    const x = (me.clientX - rect.left) / rect.width;
+    if (x < 0.35) {
+      focusMode(Math.max(0, selectedIdx - 1), game);
+    } else if (x > 0.65) {
+      focusMode(Math.min(MODE_ITEMS.length - 1, selectedIdx + 1), game);
+    }
+  });
 
   // ── Wheel / scroll ──
   modeSelector.addEventListener('wheel', (e: Event) => {
@@ -153,15 +163,4 @@ export function initCarousel(
       if (modeDescInit) modeDescInit.style.transition = '';
     });
   });
-}
-
-// ─── Internal helpers ──────────────────────────────────────
-
-function startSelectedMode(game: Game, startLoop: () => void, startScreen: HTMLElement): void {
-  initAudio();
-  // Check if name is set — if not, the caller handles the prompt.
-  // The button click in initCarousel always triggers this; startScreen
-  // wraps it with name-check logic.
-  game.beginRun(MODE_ITEMS[selectedIdx]);
-  startLoop();
 }
