@@ -1232,11 +1232,18 @@ button:active {
   padding: 4px 10px;
   border-radius: 50px;
   backdrop-filter: blur(4px);
+  overflow: hidden;
 }
 
 .pu-indicator {
   font-size: 16px;
   font-family: 'Noto Color Emoji', sans-serif;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   opacity: 0.25;
   filter: grayscale(0.8) brightness(0.5);
   transition: opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;
