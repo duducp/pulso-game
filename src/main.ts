@@ -113,6 +113,7 @@ function loop(now: number): void {
   renderer.render(game.getState());
 
   if (game.mode === 'over' || game.mode === 'menu') {
+    if (game.mode === 'menu') canvas.classList.add('hidden');
     rafId = 0;
     return;
   }
