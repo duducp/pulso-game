@@ -102,8 +102,8 @@ export function initCarousel(
     btn.dataset.mode = mode;
     btn.tabIndex = 0;
     btn.style.setProperty('--mode-rgb', MODE_GLOW[mode]);
-    const lives = (mode === 'survival' || mode === 'timed') ? '<span class="mo-lives">❤️1</span>' : '';
-    btn.innerHTML = `<span class="mo-icon">${MODE_ICONS[mode]}</span><span class="mo-label">${MODE_NAMES[mode]}${lives}</span>`;
+    const lives = (mode === 'survival' || mode === 'timed') ? '<span class="mo-lives">❤️</span>' : '';
+    btn.innerHTML = `<span class="mo-icon">${MODE_ICONS[mode]}</span><span class="mo-label">${MODE_NAMES[mode]}</span>${lives}`;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (swipeGuard) { swipeGuard = false; return; }

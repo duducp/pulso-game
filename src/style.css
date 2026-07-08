@@ -390,11 +390,22 @@ h1 {
 }
 
 .mo-lives {
-  font-size: 11px;
-  margin-left: 4px;
-  opacity: 0.55;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 12px;
+  line-height: 1;
   letter-spacing: 0;
   font-family: 'Noto Color Emoji', sans-serif;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
 }
 
 .mode-opt.focused {
