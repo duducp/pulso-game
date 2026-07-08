@@ -309,6 +309,14 @@ canvas {
   display: none;
 }
 
+.start-footer {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* ─── Mode Center (fills space to vertically center carousel) ─── */
 
 .mode-center {
