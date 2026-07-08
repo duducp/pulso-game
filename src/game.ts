@@ -354,6 +354,8 @@ export class Game {
           this.hud.updateScore(this.score);
           this.hud.updateLives(this.lives, LIVES_MAX);
           soundLifeCollect();
+          this.power = 0;
+          this.hud.updatePowerBar(0);
           this.lifeCollectPauseTimer = LIFE_COLLECT_PAUSE;
           this.hud.flashOverlayCustom('255,92,108', 0.35, '255,194,77', '0.15', 400);
           if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
@@ -384,11 +386,13 @@ export class Game {
 
     if (this.lifeCollectPauseTimer > 0) {
       this.lifeCollectPauseTimer -= dt;
+      if (this.lifeCollectPauseTimer <= 0) this.lastSpawn = this.tick;
       return;
     }
 
     if (this.revivePauseTimer > 0) {
       this.revivePauseTimer -= dt;
+      if (this.revivePauseTimer <= 0) this.lastSpawn = this.tick;
       return;
     }
 
@@ -633,6 +637,9 @@ export class Game {
     this.invincibleTimer = INVINCIBILITY_DURATION;
     this.revivePauseTimer = REVIVE_PAUSE;
     this.shakeTime = 0.35;
+    // Reset power bar so it doesn't stay stuck during the pause
+    this.power = 0;
+    this.hud.updatePowerBar(0);
     soundLifeLost();
     setTimeout(() => soundRevive(), 350);
     vibrate([40, 30, 60]);

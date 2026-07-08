@@ -34,7 +34,7 @@ export const LIFE_COLLECT_PAUSE = 1.2;
 export const REVIVE_PAUSE = 0.6;
 
 /** Minimum physical gap (px) between consecutive obstacles. */
-export const MIN_OBSTACLE_GAP_PX = 250;
+export const MIN_OBSTACLE_GAP_PX = 350;
 
 // ─── Colors ─────────────────────────────────────────────────
 export const COLORS = {
