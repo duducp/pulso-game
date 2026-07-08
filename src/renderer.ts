@@ -2,6 +2,32 @@ import type { GameState } from './types';
 import { COLORS } from './types';
 import { POWERUP_ICONS, POWERUP_RENDER_COLORS } from './powerups';
 
+// ─── Icosahedron wireframe (12 verts, 30 edges) ──────────────
+const ICO_VERTICES: [number, number, number][] = [
+  [-1, 1.618, 0], [1, 1.618, 0], [-1, -1.618, 0], [1, -1.618, 0],
+  [0, -1, 1.618], [0, 1, 1.618], [0, -1, -1.618], [0, 1, -1.618],
+  [1.618, 0, -1], [1.618, 0, 1], [-1.618, 0, -1], [-1.618, 0, 1],
+];
+
+const ICO_FACES: [number, number, number][] = [
+  [0,1,5],[0,5,11],[0,11,10],[0,10,7],[0,7,1],
+  [1,9,5],[5,4,11],[11,2,10],[10,6,7],[7,8,1],
+  [1,8,9],[5,9,4],[11,4,2],[10,2,6],[7,6,8],
+  [3,4,9],[3,9,8],[3,8,6],[3,6,2],[3,2,4],
+];
+
+const ICO_EDGES: [number, number][] = (() => {
+  const set = new Set<string>();
+  const edges: [number, number][] = [];
+  for (const [a, b, c] of ICO_FACES) {
+    for (const [i, j] of [[a, b], [b, c], [c, a]] as [number, number][]) {
+      const key = (i < j ? i + ',' + j : j + ',' + i);
+      if (!set.has(key)) { set.add(key); edges.push([i, j]); }
+    }
+  }
+  return edges;
+})();
+
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
   private W = 0;
@@ -45,6 +71,41 @@ export class Renderer {
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
+
+    this.drawIcosahedron(ctx, tick, W, H);
+  }
+
+  /** Draw a slowly rotating wireframe icosahedron in the background */
+  private drawIcosahedron(ctx: CanvasRenderingContext2D, tick: number, W: number, H: number): void {
+    const rotY = tick * 0.012;
+    const rotX = tick * 0.006;
+    const size = Math.min(W, H) * 0.35;
+    const focal = 3;
+    const cx = W * 0.5;
+    const cy = H * 0.45;
+
+    const proj = ICO_VERTICES.map(v => {
+      let [x, y, z] = v;
+      const cY = Math.cos(rotY), sY = Math.sin(rotY);
+      const x1 = x * cY + z * sY;
+      const z1 = -x * sY + z * cY;
+      x = x1; z = z1;
+      const cX = Math.cos(rotX), sX = Math.sin(rotX);
+      const y1 = y * cX - z * sX;
+      const z2 = y * sX + z * cX;
+      y = y1; z = z2;
+      const persp = focal / (focal + z * 0.12);
+      return { x: x * size * persp + cx, y: y * size * persp + cy, z };
+    });
+
+    ctx.strokeStyle = 'rgba(77,240,224,0.06)';
+    ctx.lineWidth = 0.75;
+    ctx.beginPath();
+    for (const [i, j] of ICO_EDGES) {
+      ctx.moveTo(proj[i].x, proj[i].y);
+      ctx.lineTo(proj[j].x, proj[j].y);
+    }
+    ctx.stroke();
   }
 
   /** Main game render */
