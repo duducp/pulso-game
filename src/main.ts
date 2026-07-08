@@ -72,13 +72,15 @@ if ('serviceWorker' in navigator) {
 let rafId = 0;
 
 function goToMenu(): void {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = 0;
   game.mode = 'menu';
   setTouchSwiped(false);
+  canvas.classList.add('hidden');
   const ss = document.getElementById('startScreen');
   ss?.classList.remove('hidden');
   ss?.focus();
   game.reset();
-  rafId = requestAnimationFrame(idleLoop);
 }
 
 // ─── Game loop ────────────────────────────────────────────
@@ -87,17 +89,16 @@ let acc = 0;
 
 function startLoop(): void {
   if (rafId) cancelAnimationFrame(rafId);
+  rafId = 0;
+  canvas.classList.remove('hidden');
+  const ss = document.getElementById('startScreen');
+  ss?.classList.add('hidden');
   last = performance.now();
   acc = 0;
-  loop(last);
+  rafId = requestAnimationFrame(loop);
 }
 
 function loop(now: number): void {
-  if (game.mode !== 'playing') {
-    rafId = requestAnimationFrame(idleLoop);
-    return;
-  }
-
   let dt = (now - last) / 1000;
   last = now;
   dt = Math.min(dt, 0.1);
@@ -110,16 +111,13 @@ function loop(now: number): void {
   }
 
   renderer.render(game.getState());
-  rafId = requestAnimationFrame(loop);
-}
 
-function idleLoop(now: number): void {
-  if (game.mode === 'playing') {
-    rafId = requestAnimationFrame(loop);
+  if (game.mode === 'over' || game.mode === 'menu') {
+    rafId = 0;
     return;
   }
-  renderer.idleRender(performance.now() / 1000);
-  rafId = requestAnimationFrame(idleLoop);
+
+  rafId = requestAnimationFrame(loop);
 }
 
 // ─── Init modules ─────────────────────────────────────────
@@ -128,7 +126,7 @@ initGameOverScreen(game, startLoop, goToMenu, canvas);
 initPauseScreen(game, goToMenu, startLoop, canvas);
 
 // ─── Start idle render ───────────────────────────────────
-rafId = requestAnimationFrame(idleLoop);
+canvas.classList.add('hidden');
 startScreen.focus();
 
 // ─── Escape: voltar ao menu (game over) ou retomar (pause) ─
