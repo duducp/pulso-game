@@ -98,8 +98,8 @@ export class Renderer {
       return { x: x * size * persp + cx, y: y * size * persp + cy, z };
     });
 
-    ctx.strokeStyle = 'rgba(77,240,224,0.06)';
-    ctx.lineWidth = 0.75;
+    ctx.strokeStyle = 'rgba(77,240,224,0.15)';
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     for (const [i, j] of ICO_EDGES) {
       ctx.moveTo(proj[i].x, proj[i].y);
