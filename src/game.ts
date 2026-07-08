@@ -596,7 +596,7 @@ export class Game {
       gapH: this.gapSize,
       passed: false,
       nearCounted: false,
-      w: 46,
+      w: Math.round(Math.max(32, Math.min(48, this.W * 0.10))),
     });
     return { gapY, gapH: this.gapSize };
   }
