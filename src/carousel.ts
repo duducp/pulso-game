@@ -107,8 +107,9 @@ export function initCarousel(
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (swipeGuard) { swipeGuard = false; return; }
+      const wasFocused = i === selectedIdx;
       focusMode(i, game);
-      if (i === selectedIdx) onPlay?.();
+      if (wasFocused) onPlay?.();
     });
     modeSelector.appendChild(btn);
   });
