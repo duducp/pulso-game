@@ -295,6 +295,9 @@ canvas {
   padding: max(32px, 7vh) 20px max(18px, 3vh);
   border-top: 3px solid var(--cyan);
   overflow-x: hidden;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(77,240,224,0.05) 0%, transparent 60%),
+    #090B10;
 }
 
 #pauseScreen {
