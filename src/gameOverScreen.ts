@@ -1,6 +1,6 @@
 import { initAudio } from './audio';
 import { MODE_GAMEOVER_LABELS, MODE_LB_TITLES } from './modes';
-import { todayShortStr } from './rng';
+import { todayShortStr } from './helpers';
 import type { GameModeType } from './types';
 import type { Game } from './game';
 

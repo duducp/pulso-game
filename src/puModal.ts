@@ -1,4 +1,4 @@
-import { onSwipe } from './input';
+import { onSwipe } from './helpers';
 import { ALL_POWERUP_TYPES, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
 import type { PowerUpType } from './types';
 

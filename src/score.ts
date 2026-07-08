@@ -1,6 +1,6 @@
 import type { GameModeType } from './types';
 import { MODE_LABELS, MODE_BEST_KEYS } from './modes';
-import { todayStr, todayShortStr } from './rng';
+import { todayStr, todayShortStr } from './helpers';
 import { loadBestRecord, saveBestRecord } from './storage';
 
 /** Best score with date it was achieved. */

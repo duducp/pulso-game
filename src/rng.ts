@@ -26,21 +26,3 @@ export function mulberry32(a: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-/** Today's date as YYYY-MM-DD string. */
-export function todayStr(): string {
-  const d = new Date();
-  return (
-    d.getFullYear() +
-    '-' +
-    String(d.getMonth() + 1).padStart(2, '0') +
-    '-' +
-    String(d.getDate()).padStart(2, '0')
-  );
-}
-
-/** Today's date as MM/DD (from YYYY-MM-DD). */
-export function todayShortStr(): string {
-  return todayStr().slice(5, 10).replace('-', '/');
-}
-

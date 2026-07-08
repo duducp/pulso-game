@@ -1,5 +1,5 @@
 import type { Particle, PowerUpType } from './types';
-import { COLORS } from './types';
+import { COLORS } from './constants';
 import { POWERUP_RENDER_COLORS } from './powerups';
 
 // ─── Particle spawning ─────────────────────────────────────

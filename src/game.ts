@@ -13,7 +13,7 @@ import {
   POWERUP_WEIGHTS, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_FLASH_COLORS,
 } from './powerups';
 
-import { xmur3, mulberry32, todayStr } from './rng';
+import { xmur3, mulberry32 } from './rng';
 import { spawnRing, spawnDots, spawnShatter,
   spawnRecordBurst, spawnBreakBurst, spawnNearText,
   spawnNearBurst, spawnPowerUpCollect, spawnReviveBurst,
@@ -25,8 +25,6 @@ import {
   soundRecord,
   soundGameOver,
   soundNear,
-  soundPause,
-  soundUnpause,
   soundPowerUp,
   soundOrbCollect,
   soundBounce,
@@ -41,7 +39,7 @@ import { renderGameOverStats } from './gameOverScreen';
 import { updatePlayerPhysics, moveObstacle, movePowerUp } from './physics';
 import { HudManager } from './hud';
 import { ScoreManager } from './score';
-import { vibrate } from './helpers';
+import { vibrate, todayStr } from './helpers';
 
 export class Game {
   // ─── Public state ────────────────────────────────────────
@@ -98,6 +96,8 @@ export class Game {
   private _urgentPlayed = false;
 
   onGameOver?: () => void;
+  onPause?: () => void;
+  onBeginRun?: () => void;
 
   constructor(W: number, H: number) {
     this.W = W;
@@ -236,11 +236,7 @@ export class Game {
     }
 
     this.mode = 'playing';
-
-    const startScreen = document.getElementById('startScreen');
-    const overScreen = document.getElementById('overScreen');
-    startScreen?.classList.add('hidden');
-    overScreen?.classList.add('hidden');
+    this.onBeginRun?.();
 
     this.hud.updateModeTag(this.scoring.getModeLabel(this.modeType));
     this.hud.updateBestVal(this.targetBest);
@@ -262,18 +258,11 @@ export class Game {
   }
 
   togglePause(): void {
-    const ps = document.getElementById('pauseScreen');
-    const wrap = document.getElementById('wrap');
     if (this.mode === 'playing') {
       this.paused = true;
       this.mode = 'paused';
-      soundPause();
-      wrap?.classList.add('paused');
-      ps?.classList.remove('hidden');
+      this.onPause?.();
     } else if (this.mode === 'paused') {
-      soundUnpause();
-      ps?.classList.add('hidden');
-      wrap?.classList.remove('paused');
       this.paused = false;
       this.mode = 'playing';
     }
@@ -372,6 +361,16 @@ export class Game {
     this.hud.updatePowerUpIndicators(this.activePowerUp);
   }
 
+  private deactivatePowerUp(): void {
+    this.activePowerUp = null;
+    this.powerUpTimer = 0;
+    this.slowmoMultiplier = 1;
+    this.scoreMultiplier = 1;
+    this.hud.hidePowerUpTag();
+    this.hud.updatePowerUpIndicators(null);
+    this.particles = this.particles.filter(p => p.type !== 'orb');
+  }
+
   update(dt: number): void {
     if (this.paused) return;
 
@@ -422,13 +421,7 @@ export class Game {
       this.powerUpTimer -= dt;
       this.hud.updatePowerUpTimerText(String(Math.ceil(this.powerUpTimer)));
       if (this.powerUpTimer <= 0) {
-        this.activePowerUp = null;
-        this.powerUpTimer = 0;
-        this.slowmoMultiplier = 1;
-        this.scoreMultiplier = 1;
-        this.hud.hidePowerUpTag();
-        this.hud.updatePowerUpIndicators(null);
-        this.particles = this.particles.filter(p => p.type !== 'orb');
+        this.deactivatePowerUp();
       }
     }
 
@@ -486,33 +479,29 @@ export class Game {
   }
 
   private updateMagnetOrbs(dt: number): void {
-    for (const p of this.particles) {
-      if (p.type === 'orb' && this.activePowerUp === 'magnet') {
-        const dx = (this.player.x + 10) - p.x;
-        const dy = this.player.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 5) {
-          const speed = 280 + Math.random() * 40;
-          p.x += (dx / dist) * speed * dt;
-          p.y += (dy / dist) * speed * dt;
-        }
-        if (dist < 60) p.life -= dt * 0.8;
-      }
-    }
-
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
-      if (p.type === 'orb' && this.activePowerUp === 'magnet') {
-        const dx = (this.player.x + 10) - p.x;
-        const dy = this.player.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < this.player.r + 8) {
-          this.score += 1;
-          this.magnetOrbs++;
-          this.hud.updateScore(this.score);
-          soundOrbCollect();
-          this.particles.splice(i, 1);
-        }
+      if (p.type !== 'orb' || this.activePowerUp !== 'magnet') continue;
+
+      const dx = (this.player.x + 10) - p.x;
+      const dy = this.player.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Attract toward player
+      if (dist > 5) {
+        const speed = 280 + Math.random() * 40;
+        p.x += (dx / dist) * speed * dt;
+        p.y += (dy / dist) * speed * dt;
+      }
+      if (dist < 60) p.life -= dt * 0.8;
+
+      // Collect on contact
+      if (dist < this.player.r + 8) {
+        this.score += 1;
+        this.magnetOrbs++;
+        this.hud.updateScore(this.score);
+        soundOrbCollect();
+        this.particles.splice(i, 1);
       }
     }
 
@@ -654,19 +643,7 @@ export class Game {
       moveObstacle(o, this.speed);
 
       if (!o.passed && o.x + o.w < this.player.x - this.player.r) {
-        o.passed = true;
-        if (!o.nearCounted) {
-          this.combo = 0;
-          this.hud.hideComboTag();
-        }
-        const points = Math.floor(1 * this.scoreMultiplier);
-        this.score += points;
-        this.hud.updateScore(this.score);
-        this.gainPower(POWER_PASS);
-        this.checkRecordCrossing();
-        if (this.activePowerUp === 'magnet') {
-          spawnMagnetOrbs(this.particles, o.x + o.w, o.gapY + o.gapH / 2, MAGNET_ORBS_PER_PASS);
-        }
+        this.handlePass(o);
       }
 
       const withinX = this.player.x + this.player.r > o.x && this.player.x - this.player.r < o.x + o.w;
@@ -676,89 +653,106 @@ export class Game {
         const insideObstacle = this.player.y - this.player.r < topY || this.player.y + this.player.r > botY;
 
         if (insideObstacle) {
-          if (this.breakMode) {
-            if (!o.passed) {
-              o.passed = true;
-              this.score += Math.floor(5 * this.scoreMultiplier);
-              this.breakCount++;
-              this.hud.updateScore(this.score);
-              this.checkRecordCrossing();
-            }
-            o.broken = true;
-            this.shakeTime = 0.18;
-            soundBreak();
-            vibrate(30);
-            this.hud.quickFlash(80);
-            this.shatterObstacle(o, topY);
-          } else if (this.activePowerUp === 'shield' || this.activePowerUp === 'plating') {
-            const isPlating = this.activePowerUp === 'plating';
-            if (!isPlating) {
-              this.activePowerUp = null;
-              this.powerUpTimer = 0;
-              this.hud.hidePowerUpTag();
-              this.hud.updatePowerUpIndicators(null);
-            }
-            this.shakeTime = 0.15;
-            soundBreak();
-            vibrate(20);
-            const flashRgb = isPlating ? '255,138,101' : '93,186,255';
-            this.hud.flashOverlayCustom(flashRgb, 0.25, '255,194,77', '0.15', 150);
-            this.shatterObstacle(o, topY);
-            this.player.vy = -this.H * 0.3;
-          } else if (this.modeType === 'zen') {
-            this.player.vy = -this.H * 0.35;
-            this.zenFalls++;
-          } else if (this.invincibleTimer > 0) {
-            // Invincible — pass through obstacle
-            o.passed = true;
-          } else if (this.lives > 0) {
-            // Revive! Break obstacle + consume a life
-            o.broken = true;
-            this.revive(o, topY);
-          } else {
-            this.endGame();
-            return;
-          }
+          this.handleCollision(o, topY, botY);
+          if (this.mode === 'over') break;
         } else if (!o.nearCounted) {
-          const clearance = Math.min(
-            this.player.y - this.player.r - topY,
-            botY - (this.player.y + this.player.r),
-          );
-          if (clearance >= 0 && clearance < 16) {
-            o.nearCounted = true;
-            this.nearCount++;
-            this.combo++;
-            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-            const bonus = Math.floor(this.combo * 0.5);
-            const addScore = Math.floor((1 + bonus) * this.scoreMultiplier);
-            this.score += addScore;
-            this.hud.updateScore(this.score);
-            soundNear();
-
-            if (this.combo > 1) {
-              this.hud.showComboTag(this.combo);
-            } else {
-              this.hud.hideComboTag();
-            }
-            spawnNearText(this.particles, this.player.x, this.player.y);
-
-            // Visual burst: sparks at the gap edge + shake + flash
-            const combo = this.combo;
-            const shakeAmount = Math.min(0.10 + combo * 0.006, 0.22);
-            this.shakeTime = Math.max(this.shakeTime, shakeAmount);
-            const edgeX = o.x + o.w / 2;
-            const nearTop = this.player.y - this.player.r - topY < botY - (this.player.y + this.player.r);
-            const edgeY = nearTop ? topY : botY;
-            spawnNearBurst(this.particles, edgeX, edgeY, nearTop ? 1 : -1, combo);
-            const flashAlpha = Math.min(0.12 + combo * 0.008, 0.30);
-            this.hud.flashOverlayCustom('255,194,77', flashAlpha, '255,194,77', '0.15', Math.min(100 + combo * 5, 200));
-            this.gainPower(POWER_NEAR);
-            this.checkRecordCrossing();
-          }
+          this.handleNearMiss(o, topY, botY);
         }
       }
     }
     this.obstacles = this.obstacles.filter(o => o.x + o.w > -20 && !o.broken);
+  }
+
+  private handlePass(o: Obstacle): void {
+    o.passed = true;
+    if (!o.nearCounted) {
+      this.combo = 0;
+      this.hud.hideComboTag();
+    }
+    const points = Math.floor(1 * this.scoreMultiplier);
+    this.score += points;
+    this.hud.updateScore(this.score);
+    this.gainPower(POWER_PASS);
+    this.checkRecordCrossing();
+    if (this.activePowerUp === 'magnet') {
+      spawnMagnetOrbs(this.particles, o.x + o.w, o.gapY + o.gapH / 2, MAGNET_ORBS_PER_PASS);
+    }
+  }
+
+  private handleCollision(o: Obstacle, topY: number, botY: number): void {
+    if (this.breakMode) {
+      if (!o.passed) {
+        o.passed = true;
+        this.score += Math.floor(5 * this.scoreMultiplier);
+        this.breakCount++;
+        this.hud.updateScore(this.score);
+        this.checkRecordCrossing();
+      }
+      o.broken = true;
+      this.shakeTime = 0.18;
+      soundBreak();
+      vibrate(30);
+      this.hud.quickFlash(80);
+      this.shatterObstacle(o, topY);
+    } else if (this.activePowerUp === 'shield' || this.activePowerUp === 'plating') {
+      const isPlating = this.activePowerUp === 'plating';
+      if (!isPlating) {
+        this.deactivatePowerUp();
+      }
+      this.shakeTime = 0.15;
+      soundBreak();
+      vibrate(20);
+      const flashRgb = isPlating ? '255,138,101' : '93,186,255';
+      this.hud.flashOverlayCustom(flashRgb, 0.25, '255,194,77', '0.15', 150);
+      this.shatterObstacle(o, topY);
+      this.player.vy = -this.H * 0.3;
+    } else if (this.modeType === 'zen') {
+      this.player.vy = -this.H * 0.35;
+      this.zenFalls++;
+    } else if (this.invincibleTimer > 0) {
+      o.passed = true;
+    } else if (this.lives > 0) {
+      o.broken = true;
+      this.revive(o, topY);
+    } else {
+      this.endGame();
+    }
+  }
+
+  private handleNearMiss(o: Obstacle, topY: number, botY: number): void {
+    const clearance = Math.min(
+      this.player.y - this.player.r - topY,
+      botY - (this.player.y + this.player.r),
+    );
+    if (clearance < 0 || clearance >= 16) return;
+
+    o.nearCounted = true;
+    this.nearCount++;
+    this.combo++;
+    if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+    const bonus = Math.floor(this.combo * 0.5);
+    const addScore = Math.floor((1 + bonus) * this.scoreMultiplier);
+    this.score += addScore;
+    this.hud.updateScore(this.score);
+    soundNear();
+
+    if (this.combo > 1) {
+      this.hud.showComboTag(this.combo);
+    } else {
+      this.hud.hideComboTag();
+    }
+    spawnNearText(this.particles, this.player.x, this.player.y);
+
+    const shakeAmount = Math.min(0.10 + this.combo * 0.006, 0.22);
+    this.shakeTime = Math.max(this.shakeTime, shakeAmount);
+    const edgeX = o.x + o.w / 2;
+    const nearTop = this.player.y - this.player.r - topY < botY - (this.player.y + this.player.r);
+    const edgeY = nearTop ? topY : botY;
+    spawnNearBurst(this.particles, edgeX, edgeY, nearTop ? 1 : -1, this.combo);
+    const flashAlpha = Math.min(0.12 + this.combo * 0.008, 0.30);
+    this.hud.flashOverlayCustom('255,194,77', flashAlpha, '255,194,77', '0.15', Math.min(100 + this.combo * 5, 200));
+    this.gainPower(POWER_NEAR);
+    this.checkRecordCrossing();
   }
 
   private checkRecordCrossing(): void {

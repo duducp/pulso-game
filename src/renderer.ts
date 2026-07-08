@@ -1,5 +1,5 @@
 import type { GameState } from './types';
-import { COLORS } from './types';
+import { COLORS } from './constants';
 import { POWERUP_ICONS, POWERUP_RENDER_COLORS } from './powerups';
 
 export class Renderer {

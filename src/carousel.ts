@@ -1,7 +1,7 @@
 import { MODE_ITEMS, MODE_ICONS, MODE_NAMES, MODE_GLOW, MODE_DESC } from './modes';
 import { POWERUPS_BY_MODE } from './powerups';
 import { initAudio, soundNav } from './audio';
-import { onSwipe } from './input';
+import { onSwipe } from './helpers';
 import type { Game } from './game';
 
 // ─── Carousel constants ─────────────────────────────────

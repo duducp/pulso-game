@@ -2,10 +2,10 @@ import './style.css';
 import { Game } from './game';
 import { Renderer } from './renderer';
 import { InputManager } from './input';
-import { soundUnpause } from './audio';
+import { soundPause, soundUnpause } from './audio';
 import { renderLBInto } from './ui';
 import { loadName, loadList } from './storage';
-import { todayStr } from './rng';
+import { todayStr } from './helpers';
 import { initStartScreen, setTouchSwiped, setSavedName, updatePlayerStats } from './startScreen';
 import { initGameOverScreen } from './gameOverScreen';
 import { initPauseScreen, animatePauseClose } from './pauseScreen';
@@ -143,11 +143,6 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     goToMenu();
     return;
   }
-  // Playing: pausar
-  if (game.mode === 'playing') {
-    e.preventDefault();
-    game.togglePause();
-  }
 });
 
 // ─── Pause button (mobile) ──────────────────────────────
@@ -170,4 +165,17 @@ document.getElementById('pauseBtn')!.addEventListener('click', () => {
 game.onGameOver = () => {
   renderLBInto(lbList, loadList('lb:daily:' + todayStr()), undefined, 3);
   updatePlayerStats(game);
+};
+
+// ─── Pause callback — DOM + sound, called from Game.togglePause ─
+game.onPause = () => {
+  soundPause();
+  document.getElementById('pauseScreen')?.classList.remove('hidden');
+  document.getElementById('wrap')?.classList.add('paused');
+};
+
+// ─── Begin-run callback — hide start/over screens ────────
+game.onBeginRun = () => {
+  document.getElementById('startScreen')?.classList.add('hidden');
+  document.getElementById('overScreen')?.classList.add('hidden');
 };
