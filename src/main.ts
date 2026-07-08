@@ -157,6 +157,22 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   }
 });
 
+// ─── Pause button (mobile) ──────────────────────────────
+document.getElementById('pauseBtn')!.addEventListener('click', () => {
+  const ps = document.getElementById('pauseScreen');
+  if (game.mode === 'playing') {
+    game.togglePause();
+  } else if (game.mode === 'paused' && ps && !ps.classList.contains('closing')) {
+    soundUnpause();
+    animatePauseClose(() => {
+      document.getElementById('wrap')?.classList.remove('paused');
+      game.paused = false;
+      game.mode = 'playing';
+      canvas.focus();
+    });
+  }
+});
+
 // ─── Handle game-over state change ────────────────────────
 game.onGameOver = () => {
   loadList('lb:daily:' + todayStr()).then((list) => {
