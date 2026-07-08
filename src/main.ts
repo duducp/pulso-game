@@ -47,14 +47,50 @@ if (loadedName) {
 renderLBInto(lbList, loadList('lb:daily:' + todayStr()), undefined, 5);
 game.loadPersistedData().then(() => updatePlayerStats(game));
 
-// ─── PWA: register service worker ─────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      // SW registration failed — app works fine without it
-    });
-  });
+// ─── PWA: register service worker + cache loaded assets ──
+const LOADING_SCREEN = document.getElementById('loadingScreen');
+
+function hideLoading(): void {
+  LOADING_SCREEN?.classList.add('hidden');
 }
+
+function cacheLoadedResources(): void {
+  if (!('caches' in window)) return;
+  const origin = location.origin;
+  const urls: string[] = [];
+  for (const entry of performance.getEntriesByType('resource')) {
+    if (entry.name.startsWith(origin + '/')) urls.push(entry.name);
+  }
+  urls.push(origin + '/fonts/space-grotesk-400.ttf');
+  urls.push(origin + '/fonts/space-grotesk-600.ttf');
+  urls.push(origin + '/fonts/space-grotesk-700.ttf');
+  if (urls.length === 0) return;
+  caches.open('pulso-v2').then(cache =>
+    Promise.allSettled(urls.map(u => cache.add(u).catch(() => {})))
+  ).catch(() => {});
+}
+
+window.addEventListener('load', () => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  if (!('serviceWorker' in navigator) || !('caches' in window)) {
+    hideLoading();
+    return;
+  }
+
+  // Cache all loaded resources once SW is active
+  const doCache = () => { cacheLoadedResources(); hideLoading(); };
+  if (navigator.serviceWorker.controller) {
+    doCache();
+  } else {
+    navigator.serviceWorker.addEventListener('controllerchange', doCache, { once: true });
+  }
+
+  // Fallback: hide loading after 3s regardless
+  setTimeout(hideLoading, 3000);
+});
 
 // ─── Shared state ─────────────────────────────────────────
 let rafId = 0;
