@@ -95,7 +95,7 @@ canvas {
   position: absolute;
   left: 20px;
   bottom: 70px;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', 'Noto Color Emoji', sans-serif;
   font-size: 28px;
   font-weight: 700;
   color: var(--gold);
@@ -856,7 +856,7 @@ button:active {
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 11px;
-  font-family: ui-monospace, monospace;
+  font-family: ui-monospace, 'Noto Color Emoji', monospace;
   line-height: 1.7;
   color: var(--dim);
   text-align: left;
@@ -1116,7 +1116,7 @@ button:active {
   gap: 4px;
   font-size: 11px;
   color: var(--dim);
-  font-family: ui-monospace, monospace;
+  font-family: ui-monospace, 'Noto Color Emoji', monospace;
 }
 
 .stat-s .n {
