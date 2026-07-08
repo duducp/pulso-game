@@ -137,11 +137,11 @@ export class Renderer {
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      // Icon
+      // Icon — use top baseline + manual offset for consistent Safari emoji centering
       ctx.font = '21px sans-serif';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob);
+      ctx.textBaseline = 'top';
+      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob - 10.5);
     }
 
     // Particles
