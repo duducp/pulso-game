@@ -291,6 +291,7 @@ canvas {
 }
 
 #startScreen {
+  background: transparent;
   justify-content: flex-start;
   padding: max(32px, 7vh) 20px max(18px, 3vh);
   border-top: 3px solid var(--cyan);
