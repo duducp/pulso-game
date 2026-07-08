@@ -97,6 +97,7 @@ export interface GameState {
   lives: number;
   invincibleTimer: number;
   lifeCollectPauseTimer: number;
+  revivePauseTimer: number;
   reviveCount: number;
   W: number;
   H: number;

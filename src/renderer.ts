@@ -262,6 +262,24 @@ export class Renderer {
       ctx.shadowBlur = 0;
       ctx.restore();
     }
+
+    if (s.revivePauseTimer > 0) {
+      const flash = Math.sin(s.tick * 50) > 0 ? 1 : 0.4;
+      const pulse = Math.sin(s.tick * 14) * 0.15 + 0.35;
+      ctx.save();
+      ctx.translate(s.player.x, s.player.y);
+      ctx.globalAlpha = pulse * 0.45;
+      ctx.strokeStyle = COLORS.red;
+      ctx.shadowColor = COLORS.red;
+      ctx.shadowBlur = 36;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, s.player.r * (2.0 + flash * 0.15), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
   }
 
   private renderPlayer(s: GameState): void {

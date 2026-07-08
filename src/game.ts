@@ -3,6 +3,7 @@ import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
   LIVES_MAX, INVINCIBILITY_DURATION, LIFE_POINTS, LIFE_COLLECT_PAUSE,
+  REVIVE_PAUSE,
 } from './constants';
 import {
   POWERUP_SHIELD_DURATION,
@@ -31,6 +32,7 @@ import {
   soundUrgent,
   soundRevive,
   soundLifeCollect,
+  soundLifeLost,
   isSoundEnabled,
 } from './audio';
 import { submitScore } from './storage';
@@ -78,6 +80,8 @@ export class Game {
   invincibleTimer = 0;
   /** Timer for life collection pause — game freezes + ball blinks */
   lifeCollectPauseTimer = 0;
+  /** Timer for revive pause — game freezes briefly when a life is lost */
+  revivePauseTimer = 0;
   reviveCount = 0;
 
   W: number;
@@ -150,6 +154,7 @@ export class Game {
       invincibleTimer: this.invincibleTimer,
       reviveCount: this.reviveCount,
       lifeCollectPauseTimer: this.lifeCollectPauseTimer,
+      revivePauseTimer: this.revivePauseTimer,
       W: this.W,
       H: this.H,
     };
@@ -185,6 +190,7 @@ export class Game {
     this.lives = 0;
     this.invincibleTimer = 0;
     this.lifeCollectPauseTimer = 0;
+    this.revivePauseTimer = 0;
     this.reviveCount = 0;
 
     // HUD lives display
@@ -378,6 +384,11 @@ export class Game {
 
     if (this.lifeCollectPauseTimer > 0) {
       this.lifeCollectPauseTimer -= dt;
+      return;
+    }
+
+    if (this.revivePauseTimer > 0) {
+      this.revivePauseTimer -= dt;
       return;
     }
 
@@ -618,10 +629,12 @@ export class Game {
     this.lives--;
     this.hud.updateLives(this.lives, LIVES_MAX);
     this.invincibleTimer = INVINCIBILITY_DURATION;
-    this.shakeTime = 0.25;
-    soundRevive();
+    this.revivePauseTimer = REVIVE_PAUSE;
+    this.shakeTime = 0.35;
+    soundLifeLost();
+    setTimeout(() => soundRevive(), 350);
     vibrate([40, 30, 60]);
-    this.hud.flashOverlayCustom('255,92,108', 0.3, '255,92,108', '0.15', 300);
+    this.hud.flashOverlayCustom('255,92,108', 0.4, '255,92,108', '0.15', 400);
     spawnReviveBurst(this.particles, this.player.x, this.player.y);
 
     // Shatter the obstacle that killed the player

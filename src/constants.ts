@@ -30,6 +30,9 @@ export const LIFE_POINTS = 5;
 /** Duration of the game-freeze + ball blink after collecting a life. */
 export const LIFE_COLLECT_PAUSE = 1.2;
 
+/** Duration of the game-freeze after losing a life (revive). */
+export const REVIVE_PAUSE = 0.6;
+
 // ─── Colors ─────────────────────────────────────────────────
 export const COLORS = {
   cyan: '#4DF0E0',
