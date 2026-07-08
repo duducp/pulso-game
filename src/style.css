@@ -634,23 +634,10 @@ h1 {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.pu-nav-btn::before {
-  content: '';
+.pu-nav-btn svg {
   display: block;
-  width: 8px;
-  height: 8px;
-  border-style: solid;
-  border-color: var(--dim);
-  border-width: 0 0 2px 2px;
-  transition: border-color 0.15s ease;
-}
-
-.pu-nav-btn[data-dir="-1"]::before {
-  transform: rotate(45deg);
-}
-
-.pu-nav-btn[data-dir="1"]::before {
-  transform: rotate(-135deg);
+  color: var(--dim);
+  transition: color 0.15s ease;
 }
 
 @media (hover: hover) {
@@ -658,8 +645,8 @@ h1 {
     border-color: var(--cyan);
     background: rgba(77, 240, 224, 0.08);
   }
-  .pu-nav-btn:hover::before {
-    border-color: var(--cyan);
+  .pu-nav-btn:hover svg {
+    color: var(--cyan);
   }
 }
 
@@ -1389,14 +1376,16 @@ button:active {
   background: transparent;
   border: none;
   border-radius: 50%;
-  font-size: 18px;
-  color: var(--dim);
-  opacity: 0.5;
   cursor: pointer;
+  opacity: 0.45;
   transition: opacity 0.2s ease;
-  line-height: 1;
   pointer-events: auto;
   touch-action: manipulation;
+}
+
+#pauseBtn svg {
+  display: block;
+  color: var(--dim);
 }
 
 #pauseBtn:active {

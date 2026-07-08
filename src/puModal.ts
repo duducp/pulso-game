@@ -27,14 +27,18 @@ function renderPuModalItem(idx: number, getMode: () => string): void {
 
   puCard.innerHTML =
     `<div class="pu-single-wrap">` +
-      `<button class="pu-nav-btn" data-dir="-1" aria-label="Anterior"></button>` +
+      `<button class="pu-nav-btn" data-dir="-1" aria-label="Anterior" aria-hidden="true">` +
+        `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>` +
+      `</button>` +
       `<div class="pu-single-content">` +
         `<div class="pu-big-icon" style="${available ? '' : 'opacity:0.35'}">${POWERUP_ICONS[type]}</div>` +
         `<div class="pu-name">${POWERUP_NAMES[type]}</div>` +
         `<div class="pu-desc">${POWERUP_DESC[type]}</div>` +
         `<div class="pu-dots">${dots}</div>` +
       `</div>` +
-      `<button class="pu-nav-btn" data-dir="1" aria-label="Próximo"></button>` +
+      `<button class="pu-nav-btn" data-dir="1" aria-label="Próximo" aria-hidden="true">` +
+        `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>` +
+      `</button>` +
     `</div>`;
 
   puCard.querySelectorAll('.pu-nav-btn').forEach((btn) => {
