@@ -389,6 +389,14 @@ h1 {
   white-space: nowrap;
 }
 
+.mo-lives {
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.55;
+  letter-spacing: 0;
+  font-family: 'Noto Color Emoji', sans-serif;
+}
+
 .mode-opt.focused {
   z-index: 2;
   background: rgba(var(--mode-rgb, 255, 255, 255), 0.14);
