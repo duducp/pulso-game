@@ -18,23 +18,29 @@ const lbList = document.getElementById('lbList')!;
 // ─── Initialize core systems ──────────────────────────────
 const renderer = new Renderer(canvas);
 
-/** Ensure minimum dimensions — Safari can report 0 on first paint */
-function safeDims(w: number, h: number): [number, number] {
-  if (w > 0 && h > 0) return [w, h];
-  // Fallback: use window inner dimensions, which are reliable across browsers
-  return [window.innerWidth, window.innerHeight];
+/** Get reliable viewport dimensions — prefers visualViewport on mobile */
+function getViewportDims(): { w: number; h: number } {
+  const vv = window.visualViewport;
+  if (vv && vv.width > 0 && vv.height > 0) {
+    return { w: vv.width, h: vv.height };
+  }
+  return { w: window.innerWidth, h: window.innerHeight };
 }
 
 function resize(): void {
   renderer.resize();
   if (game) {
-    const [w, h] = safeDims(canvas.clientWidth, canvas.clientHeight);
+    const { w, h } = getViewportDims();
     game.setDimensions(w, h);
   }
 }
 window.addEventListener('resize', resize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resize);
+}
 
-const [initW, initH] = safeDims(canvas.clientWidth, canvas.clientHeight);
+// Use viewport dims instead of canvas.clientWidth (can be 0 before first layout)
+const { w: initW, h: initH } = getViewportDims();
 const game = new Game(initW, initH);
 const input = new InputManager(game);
 

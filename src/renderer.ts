@@ -11,10 +11,19 @@ export class Renderer {
     this.ctx = canvas.getContext('2d')!;
   }
 
+  getViewportDims(): { w: number; h: number } {
+    const vv = window.visualViewport;
+    if (vv && vv.width > 0 && vv.height > 0) {
+      return { w: vv.width, h: vv.height };
+    }
+    return { w: window.innerWidth, h: window.innerHeight };
+  }
+
   resize(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.W = window.innerWidth;
-    this.H = window.innerHeight;
+    const { w, h } = this.getViewportDims();
+    this.W = w;
+    this.H = h;
     this.canvas.width = this.W * dpr;
     this.canvas.height = this.H * dpr;
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
