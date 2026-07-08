@@ -133,12 +133,12 @@ export class Renderer {
       ctx.fillStyle = color;
       ctx.globalAlpha = 0.25;
       ctx.beginPath();
-      ctx.arc(pu.x, pu.y + bob, 22, 0, Math.PI * 2);
+      ctx.arc(pu.x, pu.y + bob, 26, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      // Icon (Noto Color Emoji for consistent cross-platform rendering)
-      ctx.font = '21px "Noto Color Emoji", sans-serif';
+      // Icon
+      ctx.font = '21px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob);
