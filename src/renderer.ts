@@ -77,10 +77,10 @@ export class Renderer {
 
   /** Draw a slowly rotating wireframe icosahedron in the background */
   private drawIcosahedron(ctx: CanvasRenderingContext2D, tick: number, W: number, H: number): void {
-    const rotY = tick * 0.012;
-    const rotX = tick * 0.006;
-    const size = Math.min(W, H) * 0.35;
-    const focal = 3;
+    const rotY = tick * 0.05;
+    const rotX = tick * 0.025;
+    const size = Math.min(W, H) * 0.42;
+    const focal = 2.5;
     const cx = W * 0.5;
     const cy = H * 0.45;
 
@@ -98,8 +98,8 @@ export class Renderer {
       return { x: x * size * persp + cx, y: y * size * persp + cy, z };
     });
 
-    ctx.strokeStyle = 'rgba(77,240,224,0.15)';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(77,240,224,0.35)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (const [i, j] of ICO_EDGES) {
       ctx.moveTo(proj[i].x, proj[i].y);
