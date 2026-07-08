@@ -18,19 +18,10 @@ const lbList = document.getElementById('lbList')!;
 // ─── Initialize core systems ──────────────────────────────
 const renderer = new Renderer(canvas);
 
-/** Get reliable viewport dimensions — prefers visualViewport on mobile */
-function getViewportDims(): { w: number; h: number } {
-  const vv = window.visualViewport;
-  if (vv && vv.width > 0 && vv.height > 0) {
-    return { w: vv.width, h: vv.height };
-  }
-  return { w: window.innerWidth, h: window.innerHeight };
-}
-
 function resize(): void {
   renderer.resize();
   if (game) {
-    const { w, h } = getViewportDims();
+    const { w, h } = renderer.getViewportDims();
     game.setDimensions(w, h);
   }
 }
@@ -40,23 +31,20 @@ if (window.visualViewport) {
 }
 
 // Use viewport dims instead of canvas.clientWidth (can be 0 before first layout)
-const { w: initW, h: initH } = getViewportDims();
+const { w: initW, h: initH } = renderer.getViewportDims();
 const game = new Game(initW, initH);
 const input = new InputManager(game);
 
 resize();
 
 // ─── Load persisted data ──────────────────────────────────
-loadName().then((n) => {
-  if (n) {
-    setSavedName(n);
-    const nameInput = document.getElementById('nameInput') as HTMLInputElement;
-    if (nameInput) nameInput.value = n;
-  }
-});
-loadList('lb:daily:' + todayStr()).then((list) => {
-  renderLBInto(lbList, list, undefined, 5);
-});
+const loadedName = loadName();
+if (loadedName) {
+  setSavedName(loadedName);
+  const nameInput = document.getElementById('nameInput') as HTMLInputElement;
+  if (nameInput) nameInput.value = loadedName;
+}
+renderLBInto(lbList, loadList('lb:daily:' + todayStr()), undefined, 5);
 game.loadPersistedData().then(() => updatePlayerStats(game));
 
 // ─── PWA: register service worker ─────────────────────────
@@ -153,6 +141,12 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     e.preventDefault();
     os.classList.add('hidden');
     goToMenu();
+    return;
+  }
+  // Playing: pausar
+  if (game.mode === 'playing') {
+    e.preventDefault();
+    game.togglePause();
   }
 });
 
@@ -174,8 +168,6 @@ document.getElementById('pauseBtn')!.addEventListener('click', () => {
 
 // ─── Handle game-over state change ────────────────────────
 game.onGameOver = () => {
-  loadList('lb:daily:' + todayStr()).then((list) => {
-    renderLBInto(lbList, list, undefined, 3);
-  });
+  renderLBInto(lbList, loadList('lb:daily:' + todayStr()), undefined, 3);
   updatePlayerStats(game);
 };

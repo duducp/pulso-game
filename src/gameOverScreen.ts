@@ -1,6 +1,6 @@
 import { initAudio } from './audio';
 import { MODE_GAMEOVER_LABELS, MODE_LB_TITLES } from './modes';
-import { todayStr } from './rng';
+import { todayShortStr } from './rng';
 import type { GameModeType } from './types';
 import type { Game } from './game';
 
@@ -45,7 +45,7 @@ export function renderGameOverStats(stats: GameOverStats): void {
   if (overLabel) {
     const base = MODE_GAMEOVER_LABELS[stats.modeType];
     if (stats.modeType === 'daily') {
-      overLabel.textContent = 'desafio de ' + todayStr().slice(5, 10).replace('-', '/');
+      overLabel.textContent = 'desafio de ' + todayShortStr();
     } else {
       overLabel.textContent = base;
     }

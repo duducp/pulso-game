@@ -1,6 +1,6 @@
 import type { GameModeType } from './types';
 import { MODE_LABELS, MODE_BEST_KEYS } from './modes';
-import { todayStr } from './rng';
+import { todayStr, todayShortStr } from './rng';
 import { loadBestRecord, saveBestRecord } from './storage';
 
 /** Best score with date it was achieved. */
@@ -36,17 +36,12 @@ export class ScoreManager {
   }
 
   // ─── Persistence ────────────────────────────────────────
-  async loadPersistedData(): Promise<void> {
-    const [bestFree, bestDaily, bestTimed, bestSurvival] = await Promise.all([
-      loadBestRecord('profile:best:free'),
-      loadBestRecord('profile:best:daily:' + todayStr()),
-      loadBestRecord('profile:best:timed'),
-      loadBestRecord('profile:best:survival'),
-    ]);
-    this.bestFree = bestFree;
-    this.bestDailyToday = bestDaily;
-    this.bestTimed = bestTimed;
-    this.bestSurvival = bestSurvival;
+  /** Reset + load persisted scores. */
+  loadPersistedData(): void {
+    this.bestFree = loadBestRecord('profile:best:free');
+    this.bestDailyToday = loadBestRecord('profile:best:daily:' + todayStr());
+    this.bestTimed = loadBestRecord('profile:best:timed');
+    this.bestSurvival = loadBestRecord('profile:best:survival');
   }
 
   /**
@@ -83,7 +78,7 @@ export class ScoreManager {
   getModeLabel(modeType: GameModeType): string {
     const base = MODE_LABELS[modeType];
     if (modeType === 'daily') {
-      return base + ' · ' + todayStr().slice(5, 10).replace('-', '/');
+      return base + ' · ' + todayShortStr();
     }
     return base;
   }

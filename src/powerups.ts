@@ -1,5 +1,7 @@
 import type { GameModeType, PowerUpType } from './types';
 
+export const ALL_POWERUP_TYPES: PowerUpType[] = ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
+
 // ─── Duration Constants ────────────────────────────────────
 export const POWERUP_SHIELD_DURATION = 5;
 export const POWERUP_SLOWMO_DURATION = 3;

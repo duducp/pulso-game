@@ -132,17 +132,6 @@ export class HudManager {
   }
 
   // ─── Flash Overlay ───────────────────────────────────────
-  flashOverlay(rgb: string, alpha: number, durationMs = 200, finalAlpha = '0.15'): void {
-    const fel = this.flashOverlayEl;
-    if (!fel) return;
-    fel.style.background = `rgba(${rgb},${alpha})`;
-    fel.classList.add('flash');
-    setTimeout(() => {
-      fel.classList.remove('flash');
-      fel.style.background = `rgba(255,194,77,${finalAlpha})`;
-    }, durationMs);
-  }
-
   flashOverlayCustom(rgb: string, alpha: number, finalRgb = '255,194,77', finalAlpha = '0.15', durationMs = 200): void {
     const fel = this.flashOverlayEl;
     if (!fel) return;
@@ -204,12 +193,13 @@ export class HudManager {
   // ─── Power-Up Tag ────────────────────────────────────────
   showPowerUpTag(html: string): void {
     if (!this.powerUpTagEl) return;
-    this.powerUpTagEl.style.display = 'flex';
+    this.powerUpTagEl.style.opacity = '1';
+    this.powerUpTagEl.style.visibility = 'visible';
     this.powerUpTagEl.innerHTML = html;
   }
 
   hidePowerUpTag(): void {
-    if (this.powerUpTagEl) this.powerUpTagEl.style.display = 'none';
+    if (this.powerUpTagEl) { this.powerUpTagEl.style.opacity = '0'; this.powerUpTagEl.style.visibility = 'hidden'; }
   }
 
   updatePowerUpTimerText(val: string): void {

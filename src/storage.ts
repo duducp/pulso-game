@@ -3,7 +3,7 @@ import type { LeaderboardEntry } from './types';
 const STORAGE_PREFIX = 'pulso:';
 
 /** Load a list of leaderboard entries. */
-export async function loadList(key: string): Promise<LeaderboardEntry[]> {
+export function loadList(key: string): LeaderboardEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + key);
     return raw ? (JSON.parse(raw) as LeaderboardEntry[]) : [];
@@ -13,12 +13,12 @@ export async function loadList(key: string): Promise<LeaderboardEntry[]> {
 }
 
 /** Submit a score and return the updated (sorted, truncated) list. */
-export async function submitScore(
+export function submitScore(
   key: string,
   entry: LeaderboardEntry,
-): Promise<LeaderboardEntry[] | null> {
+): LeaderboardEntry[] | null {
   try {
-    const list = await loadList(key);
+    const list = loadList(key);
     list.push(entry);
     list.sort((a, b) => b.s - a.s);
     list.splice(20); // keep top 20
@@ -47,7 +47,7 @@ function saveVal(key: string, val: string): void {
   }
 }
 
-export async function loadName(): Promise<string> {
+export function loadName(): string {
   return loadVal('profile:name') ?? '';
 }
 
@@ -56,7 +56,7 @@ export function saveName(name: string): void {
 }
 
 /** Load best score with the date it was achieved. Returns { score, date } or { score: 0, date: null }. */
-export async function loadBestRecord(key: string): Promise<{ score: number; date: string | null }> {
+export function loadBestRecord(key: string): { score: number; date: string | null } {
   const raw = loadVal(key);
   if (!raw) return { score: 0, date: null };
   try {

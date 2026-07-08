@@ -86,7 +86,6 @@ export interface GameState {
   targetBest: number;
   recordCrossed: boolean;
   tick: number;
-  isGameOver: boolean;
   paused: boolean;
   soundEnabled: boolean;
   timeRemaining: number;

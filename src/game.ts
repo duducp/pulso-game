@@ -1,6 +1,6 @@
 import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, GameState, PowerUp, PowerUpType } from './types';
 import {
-  POWER_PASS, POWER_NEAR, BREAK_DURATION, STEP,
+  POWER_PASS, POWER_NEAR, BREAK_DURATION,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
   LIVES_MAX, INVINCIBILITY_DURATION, LIFE_POINTS,
 } from './constants';
@@ -75,7 +75,6 @@ export class Game {
   targetBest = 0;
   recordCrossed = false;
   tick = 0;
-  isGameOver = false;
   paused = false;
   timeRemaining = 0;
   zenFalls = 0;
@@ -146,7 +145,6 @@ export class Game {
       targetBest: this.targetBest,
       recordCrossed: this.recordCrossed,
       tick: this.tick,
-      isGameOver: this.isGameOver,
       paused: this.paused,
       soundEnabled: isSoundEnabled(),
       timeRemaining: this.timeRemaining,
@@ -185,7 +183,6 @@ export class Game {
     this.combo = 0;
     this.maxCombo = 0;
     this.trail = [];
-    this.isGameOver = false;
     this.zenFalls = 0;
     this.activePowerUp = null;
     this.powerUpTimer = 0;
@@ -212,8 +209,8 @@ export class Game {
     }
   }
 
-  async loadPersistedData(): Promise<void> {
-    await this.scoring.loadPersistedData();
+  loadPersistedData(): Promise<void> {
+    return Promise.resolve(this.scoring.loadPersistedData());
   }
 
   getModeLabel(): string {
@@ -327,7 +324,7 @@ export class Game {
     spawnPowerUpCollect(this.particles, pu.x, pu.y, pu.type);
 
     const color = POWERUP_FLASH_COLORS[pu.type];
-    this.hud.flashOverlay(color, 0.2, 200);
+    this.hud.flashOverlayCustom(color, 0.2, '255,194,77', '0.15', 200);
 
     switch (pu.type) {
       case 'shield':
@@ -370,7 +367,7 @@ export class Game {
           this.hud.updateLives(this.lives, LIVES_MAX);
           soundLifeCollect();
           this.lifeCollectPauseTimer = 1.2; // pause + ball blink
-          this.hud.flashOverlay('255,92,108', 0.35, 400);
+          this.hud.flashOverlayCustom('255,92,108', 0.35, '255,194,77', '0.15', 400);
           if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
         }
         return; // Don't show power-up tag for life
@@ -445,7 +442,8 @@ export class Game {
 
     // ── Power-ups movement ──
     for (const pu of this.powerUps) {
-      movePowerUp(pu, this.speed, dt);
+      movePowerUp(pu, this.speed);
+      pu.phase += dt;
     }
     this.powerUps = this.powerUps.filter(p => p.x > -40 && !p.collected);
 
@@ -515,7 +513,7 @@ export class Game {
         // Brief invincibility + flash to prevent instant death on obstacle player was about to break
         this.invincibleTimer = Math.max(this.invincibleTimer, 0.5);
         this.shakeTime = Math.max(this.shakeTime, 0.15);
-        this.hud.flashOverlay('255,92,108', 0.25, 250, '0');
+        this.hud.flashOverlayCustom('255,92,108', 0.25, '255,194,77', '0', 250);
       }
     }
     if (this.shakeTime > 0) this.shakeTime -= dt;
@@ -638,8 +636,7 @@ export class Game {
 
     // Shatter the obstacle that killed the player
     if (o && topY !== undefined) {
-      spawnShatter(this.particles, o.x, 0, topY, o.w);
-      spawnShatter(this.particles, o.x, topY + o.gapH, this.H, o.w);
+      this.shatterObstacle(o, topY);
     }
 
     // Show "reviveu!" text — set text BEFORE showing to avoid flash of wrong value
@@ -649,6 +646,11 @@ export class Game {
       comboEl.classList.add('show');
     }
     setTimeout(() => this.hud.hideComboTag(), 600);
+  }
+
+  private shatterObstacle(o: Obstacle, topY: number): void {
+    spawnShatter(this.particles, o.x, 0, topY, o.w);
+    spawnShatter(this.particles, o.x, topY + o.gapH, this.H, o.w);
   }
 
   private updateObstacles(): void {
@@ -691,8 +693,7 @@ export class Game {
             soundBreak();
             if (navigator.vibrate) navigator.vibrate(30);
             this.hud.quickFlash(80);
-            spawnShatter(this.particles, o.x, 0, topY, o.w);
-            spawnShatter(this.particles, o.x, botY, this.H, o.w);
+            this.shatterObstacle(o, topY);
           } else if (this.activePowerUp === 'shield' || this.activePowerUp === 'plating') {
             const isPlating = this.activePowerUp === 'plating';
             if (!isPlating) {
@@ -706,8 +707,7 @@ export class Game {
             if (navigator.vibrate) navigator.vibrate(20);
             const flashRgb = isPlating ? '255,138,101' : '93,186,255';
             this.hud.flashOverlayCustom(flashRgb, 0.25, '255,194,77', '0.15', 150);
-            spawnShatter(this.particles, o.x, 0, topY, o.w);
-            spawnShatter(this.particles, o.x, botY, this.H, o.w);
+            this.shatterObstacle(o, topY);
             this.player.vy = -this.H * 0.3;
           } else if (this.modeType === 'zen') {
             this.player.vy = -this.H * 0.35;
@@ -755,7 +755,7 @@ export class Game {
             const edgeY = nearTop ? topY : botY;
             spawnNearBurst(this.particles, edgeX, edgeY, nearTop ? 1 : -1, combo);
             const flashAlpha = Math.min(0.12 + combo * 0.008, 0.30);
-            this.hud.flashOverlay('255,194,77', flashAlpha, Math.min(100 + combo * 5, 200));
+            this.hud.flashOverlayCustom('255,194,77', flashAlpha, '255,194,77', '0.15', Math.min(100 + combo * 5, 200));
             this.gainPower(POWER_NEAR);
             this.checkRecordCrossing();
           }
@@ -793,8 +793,7 @@ export class Game {
   }
 
   async endGame(): Promise<void> {
-    if (this.isGameOver) return;
-    this.isGameOver = true;
+    if (this.mode === 'over') return;
     this.mode = 'over';
 
     if (this.modeType !== 'zen') {
@@ -835,7 +834,7 @@ export class Game {
       const key = this.getLBKey();
       const ts = Date.now();
       const playerName = (document.getElementById('nameInput') as HTMLInputElement)?.value?.trim().toUpperCase().slice(0, 10) || 'JOGADOR';
-      const list = await submitScore(key, { n: playerName, s: this.score, t: ts });
+      const list = submitScore(key, { n: playerName, s: this.score, t: ts });
       if (list) {
         renderLBInto(lbList2!, list, ts);
         const lbList = document.getElementById('lbList');

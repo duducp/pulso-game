@@ -1,6 +1,6 @@
 import { initAudio } from './audio';
 import { MODE_ITEMS, MODE_NAMES } from './modes';
-import { POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
+import { ALL_POWERUP_TYPES, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
 import { saveName } from './storage';
 import { initPuModal } from './puModal';
 import { initCarousel, focusMode, selectedIdx } from './carousel';
@@ -109,7 +109,7 @@ export function initStartScreen(
   // ── Build power-up HUD indicators ──
   const indicatorsEl = document.getElementById('powerUpIndicators');
   if (indicatorsEl) {
-    ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'].forEach((type) => {
+    ALL_POWERUP_TYPES.forEach((type) => {
       const div = document.createElement('div');
       div.className = 'pu-indicator';
       div.dataset.type = type;
@@ -188,8 +188,7 @@ export function initStartScreen(
 
   // ── Build power-up icons ──
   if (puEl) {
-    const allPwuTypes: Array<keyof typeof POWERUP_ICONS> = ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
-    allPwuTypes.forEach((type) => {
+    ALL_POWERUP_TYPES.forEach((type) => {
       const span = document.createElement('span');
       span.className = 'mp-icon';
       span.textContent = POWERUP_ICONS[type];

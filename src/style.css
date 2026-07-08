@@ -1093,9 +1093,6 @@ button:active {
   margin-top: 2px;
 }
 
-#finalBest[data-beaten="true"] {
-  color: var(--gold) !important;
-}
 
 /* Secondary stats row (compact) */
 .row-secondary {
@@ -1300,7 +1297,9 @@ button:active {
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  display: flex;
   align-items: center;
   gap: 6px;
   font-size: 22px;
@@ -1368,28 +1367,8 @@ button:active {
   font-size: 13px;
 }
 
-/* ─── Toast ─────────────────────────────────────────────── */
 
-#toast {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--ink);
-  color: #06110F;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 100px;
-  font-size: 13px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-  z-index: 20;
-}
 
-#toast.show {
-  opacity: 1;
-}
 
 #pauseBtn {
   position: absolute;

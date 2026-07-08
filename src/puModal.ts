@@ -1,10 +1,9 @@
 import { onSwipe } from './input';
-import { MODE_ITEMS } from './modes';
-import { POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
+import { ALL_POWERUP_TYPES, POWERUPS_BY_MODE, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from './powerups';
 import type { PowerUpType } from './types';
 
 // ─── Power-up types ────────────────────────────────────
-const PU_TYPES: Array<keyof typeof POWERUP_ICONS> = ['life', 'shield', 'slowmo', 'doublepulse', 'magnet', 'freeze', 'plating', 'autofocus'];
+const PU_TYPES = ALL_POWERUP_TYPES;
 
 let puModalIdx = 0;
 

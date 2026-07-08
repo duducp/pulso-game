@@ -39,3 +39,8 @@ export function todayStr(): string {
   );
 }
 
+/** Today's date as MM/DD (from YYYY-MM-DD). */
+export function todayShortStr(): string {
+  return todayStr().slice(5, 10).replace('-', '/');
+}
+
