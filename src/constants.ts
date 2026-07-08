@@ -26,3 +26,6 @@ export const INVINCIBILITY_DURATION = 2.0;
 
 /** Points rewarded when collecting a life. */
 export const LIFE_POINTS = 5;
+
+/** Duration of the game-freeze + ball blink after collecting a life. */
+export const LIFE_COLLECT_PAUSE = 1.2;

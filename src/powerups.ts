@@ -36,7 +36,7 @@ export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
 };
 
 // ─── Display Data ──────────────────────────────────────────
-export const POWERUP_ICONS: Record<string, string> = {
+export const POWERUP_ICONS: Record<PowerUpType, string> = {
   shield: '🛡️',
   slowmo: '⏱️',
   doublepulse: '2️⃣',
@@ -47,7 +47,7 @@ export const POWERUP_ICONS: Record<string, string> = {
   life: '❤️',
 };
 
-export const POWERUP_NAMES: Record<string, string> = {
+export const POWERUP_NAMES: Record<PowerUpType, string> = {
   shield: 'Barreira',
   slowmo: 'Câmera Lenta',
   doublepulse: 'Pulso Duplo',
@@ -72,7 +72,7 @@ export const POWERUP_RENDER_COLORS: Record<PowerUpType, string> = {
   life: '#FF5C6C',
 };
 
-export const POWERUP_DESC: Record<string, string> = {
+export const POWERUP_DESC: Record<PowerUpType, string> = {
   shield: 'Barreira energética. Absorve uma colisão — proteção total por 5s.',
   slowmo: 'O tempo desacelera. Obstáculos em câmera lenta por 3s.',
   doublepulse: 'Cada obstáculo ultrapassado vale 2 pontos. Pontuação acelerada por 5s.',

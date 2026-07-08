@@ -1093,6 +1093,9 @@ button:active {
   margin-top: 2px;
 }
 
+#finalBreaks { color: var(--gold); }
+#finalNear { color: var(--cyan); }
+
 
 /* Secondary stats row (compact) */
 .row-secondary {
@@ -1130,8 +1133,6 @@ button:active {
   opacity: 0.6;
 }
 
-.stat-s .s-breaks { color: var(--gold); }
-.stat-s .s-near { color: var(--cyan); }
 .stat-s .s-revive { color: var(--red); }
 .stat-s .s-bpm { color: var(--purple); }
 

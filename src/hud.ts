@@ -24,6 +24,7 @@ export class HudManager {
   private powerUpIndicatorEls: NodeListOf<Element> | null = null;
   private livesHeartsEl: HTMLElement | null = null;
   private livesTextEl: HTMLElement | null = null;
+  private timerHudEl: HTMLElement | null = null;
 
   constructor() {
     this.cacheDomRefs();
@@ -47,6 +48,7 @@ export class HudManager {
     this.powerUpIndicatorEls = document.querySelectorAll('.pu-indicator');
     this.livesHeartsEl = document.getElementById('livesHearts');
     this.livesTextEl = document.getElementById('livesText');
+    this.timerHudEl = document.getElementById('timerHud');
   }
 
   // ─── Reset ────────────────────────────────────────────────
@@ -88,13 +90,11 @@ export class HudManager {
   }
 
   showTimerBlock(): void {
-    const el = document.getElementById('timerHud');
-    if (el) el.style.display = 'block';
+    if (this.timerHudEl) this.timerHudEl.style.display = 'block';
   }
 
   hideTimerBlock(): void {
-    const el = document.getElementById('timerHud');
-    if (el) el.style.display = 'none';
+    if (this.timerHudEl) this.timerHudEl.style.display = 'none';
   }
 
   // ─── Power Bar ───────────────────────────────────────────
@@ -114,6 +114,13 @@ export class HudManager {
   showComboTag(val: number): void {
     if (this.comboTagEl) {
       this.comboTagEl.textContent = 'x' + val;
+      this.comboTagEl.classList.add('show');
+    }
+  }
+
+  showComboTagText(text: string): void {
+    if (this.comboTagEl) {
+      this.comboTagEl.textContent = text;
       this.comboTagEl.classList.add('show');
     }
   }

@@ -4,6 +4,7 @@ import { ALL_POWERUP_TYPES, POWERUP_ICONS, POWERUP_NAMES, POWERUP_DESC } from '.
 import { saveName } from './storage';
 import { initPuModal } from './puModal';
 import { initCarousel, focusMode, selectedIdx } from './carousel';
+import { formatDate } from './helpers';
 import type { Game } from './game';
 
 // ─── Shared state (exported for main.ts) ─────────────────
@@ -12,17 +13,6 @@ export let touchSwiped = false;
 
 export function setSavedName(v: string): void { savedName = v; }
 export function setTouchSwiped(v: boolean): void { touchSwiped = v; }
-
-// ─── Friendly date formatting ───────────────────────────────
-const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-function formatDate(isoDate: string): string {
-  const parts = isoDate.split('-');
-  if (parts.length !== 3) return isoDate;
-  const day = parseInt(parts[2], 10);
-  const month = parseInt(parts[1], 10);
-  if (isNaN(day) || isNaN(month)) return isoDate;
-  return day + ' ' + MONTHS[month - 1];
-}
 
 // ─── Player stats row ──────────────────────────────────────
 export function updatePlayerStats(game: Game): void {

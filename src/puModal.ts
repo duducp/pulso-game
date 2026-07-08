@@ -15,7 +15,7 @@ function closePuModal(startScreen: HTMLElement): void {
 
 function renderPuModalItem(idx: number, getMode: () => string): void {
   const mode = getMode();
-  const type = PU_TYPES[idx] as string;
+  const type = PU_TYPES[idx];
   const available = POWERUPS_BY_MODE[mode as keyof typeof POWERUPS_BY_MODE]?.includes(type as PowerUpType) ?? false;
   const total = PU_TYPES.length;
   const puCard = document.getElementById('puCard')!;

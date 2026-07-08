@@ -2,7 +2,7 @@ import type { Player, Obstacle, Particle, TrailPoint, GameMode, GameModeType, Ga
 import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
-  LIVES_MAX, INVINCIBILITY_DURATION, LIFE_POINTS,
+  LIVES_MAX, INVINCIBILITY_DURATION, LIFE_POINTS, LIFE_COLLECT_PAUSE,
 } from './constants';
 import {
   POWERUP_SHIELD_DURATION,
@@ -14,18 +14,10 @@ import {
 } from './powerups';
 
 import { xmur3, mulberry32, todayStr } from './rng';
-import {
-  spawnRing,
-  spawnDots,
-  spawnShatter,
-  spawnRecordBurst,
-  spawnBreakBurst,
-  spawnNearText,
-  spawnNearBurst,
-  spawnPowerUpCollect,
-  spawnReviveBurst,
-  spawnMagnetOrbs,
-  updateParticles,
+import { spawnRing, spawnDots, spawnShatter,
+  spawnRecordBurst, spawnBreakBurst, spawnNearText,
+  spawnNearBurst, spawnPowerUpCollect, spawnReviveBurst,
+  spawnMagnetOrbs, updateParticles,
 } from './particles';
 import {
   soundPulse,
@@ -49,6 +41,7 @@ import { renderGameOverStats } from './gameOverScreen';
 import { updatePlayerPhysics, moveObstacle, movePowerUp } from './physics';
 import { HudManager } from './hud';
 import { ScoreManager } from './score';
+import { vibrate } from './helpers';
 
 export class Game {
   // ─── Public state ────────────────────────────────────────
@@ -290,7 +283,7 @@ export class Game {
     if (this.mode !== 'playing') return;
     this.player.vy = -this.H * 0.62;
     soundPulse();
-    if (navigator.vibrate) navigator.vibrate(10);
+    vibrate(10);
     spawnRing(this.particles, this.player.x, this.player.y, this.player.r);
     spawnDots(this.particles, this.player.x, this.player.y, 6, 90);
   }
@@ -366,7 +359,7 @@ export class Game {
           this.hud.updateScore(this.score);
           this.hud.updateLives(this.lives, LIVES_MAX);
           soundLifeCollect();
-          this.lifeCollectPauseTimer = 1.2; // pause + ball blink
+          this.lifeCollectPauseTimer = LIFE_COLLECT_PAUSE;
           this.hud.flashOverlayCustom('255,92,108', 0.35, '255,194,77', '0.15', 400);
           if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
         }
@@ -382,16 +375,49 @@ export class Game {
   update(dt: number): void {
     if (this.paused) return;
 
-    // Tick always advances so renderer animations (blink, glow) keep running
     this.tick += dt;
 
-    // ── Life collection pause — freeze game, let ball blink ──
     if (this.lifeCollectPauseTimer > 0) {
       this.lifeCollectPauseTimer -= dt;
       return;
     }
 
-    // ── Power-up timer ──
+    this.updateTimers(dt);
+    this.updateDifficulty();
+    this.updateSpawn();
+    this.updatePowerUpsMovement(dt);
+
+    const { vy, y, rot } = updatePlayerPhysics(this.player, this.H, dt);
+    this.player.vy = vy;
+    this.player.y = y;
+    this.player.rot = rot;
+
+    this.updatePlayerBounds();
+    if (this.mode === 'over') return;
+
+    if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
+
+    this.updateBreakMode(dt);
+    if (this.shakeTime > 0) this.shakeTime -= dt;
+
+    this.trail.push({ x: this.player.x, y: this.player.y });
+    if (this.trail.length > 12) this.trail.shift();
+
+    this.updateObstacles();
+
+    this.hud.updatePowerBar(this.power);
+
+    this.updateMagnetOrbs(dt);
+
+    updateParticles(this.particles, dt);
+    this.particles = this.particles.filter(p => p.life > 0);
+
+    this.updateAutofocus(dt);
+
+    this.updateRecordPace();
+  }
+
+  private updateTimers(dt: number): void {
     if (this.activePowerUp && this.powerUpTimer > 0) {
       this.powerUpTimer -= dt;
       this.hud.updatePowerUpTimerText(String(Math.ceil(this.powerUpTimer)));
@@ -406,20 +432,10 @@ export class Game {
       }
     }
 
-    // ── SlowMo recovery ──
     if (this.slowmoMultiplier < 1) {
       this.slowmoMultiplier = Math.min(1, this.slowmoMultiplier + dt * 0.5);
     }
 
-    // ── Difficulty scaling ──
-    const speedMult = (this.modeType === 'survival' ? SURVIVAL_SPEED_MULT : 1) * this.slowmoMultiplier;
-    const scoreFactor = this.modeType === 'survival' ? this.score * this.W * 0.018 : this.score * this.W * 0.010;
-    this.speed = (this.W * 0.34 + scoreFactor) * speedMult;
-    this.gapSize = Math.max(this.H * 0.30 - this.score * 3.2 * speedMult, this.H * 0.20);
-    this.bpm = 72 + this.score * 2.4;
-    this.hud.updateSpeedText(String(Math.round((this.speed / this.W) * 100)));
-
-    // ── Timed mode countdown ──
     if (this.modeType === 'timed') {
       if (this.activePowerUp !== 'freeze') {
         this.timeRemaining -= dt;
@@ -428,8 +444,18 @@ export class Game {
       this.hud.setTimerColor(this.activePowerUp === 'freeze' ? 'var(--cyan)' : 'var(--red)');
       if (this.timeRemaining <= 0) { this.endGame(); return; }
     }
+  }
 
-    // ── Spawn obstacles + power-ups ──
+  private updateDifficulty(): void {
+    const speedMult = (this.modeType === 'survival' ? SURVIVAL_SPEED_MULT : 1) * this.slowmoMultiplier;
+    const scoreFactor = this.modeType === 'survival' ? this.score * this.W * 0.018 : this.score * this.W * 0.010;
+    this.speed = (this.W * 0.34 + scoreFactor) * speedMult;
+    this.gapSize = Math.max(this.H * 0.30 - this.score * 3.2 * speedMult, this.H * 0.20);
+    this.bpm = 72 + this.score * 2.4;
+    this.hud.updateSpeedText(String(Math.round((this.speed / this.W) * 100)));
+  }
+
+  private updateSpawn(): void {
     const interval = Math.max(1.5 - this.score * 0.02, 0.9);
     if (this.tick - this.lastSpawn > interval) {
       this.lastSpawn = this.tick;
@@ -439,15 +465,15 @@ export class Game {
         this.spawnPowerUp(gapInfo.gapY + gapInfo.gapH / 2);
       }
     }
+  }
 
-    // ── Power-ups movement ──
+  private updatePowerUpsMovement(dt: number): void {
     for (const pu of this.powerUps) {
       movePowerUp(pu, this.speed);
       pu.phase += dt;
     }
     this.powerUps = this.powerUps.filter(p => p.x > -40 && !p.collected);
 
-    // ── Power-up collection ──
     for (const pu of this.powerUps) {
       if (pu.collected) continue;
       const dx = this.player.x - pu.x;
@@ -457,75 +483,9 @@ export class Game {
         this.collectPowerUp(pu);
       }
     }
+  }
 
-    // ── Player physics ──
-    const { vy, y, rot } = updatePlayerPhysics(this.player, this.H, dt);
-    this.player.vy = vy;
-    this.player.y = y;
-    this.player.rot = rot;
-
-    if (this.player.y - this.player.r < 0) {
-      this.player.y = this.player.r;
-      this.player.vy = 0;
-      if (this.modeType === 'zen') soundBounce();
-    }
-    if (this.player.y + this.player.r > this.H) {
-      if (this.modeType === 'zen') {
-        this.player.y = this.H - this.player.r;
-        this.player.vy = -this.H * 0.4;
-        this.zenFalls++;
-        soundBounce();
-      } else if (this.lives > 0) {
-        this.revive();
-        // Bounce player back up after revive
-        this.player.y = this.H - this.player.r;
-        this.player.vy = -this.H * 0.35;
-      } else {
-        this.endGame();
-        return;
-      }
-    }
-
-    // ── Invincibility timer ──
-    if (this.invincibleTimer > 0) {
-      this.invincibleTimer -= dt;
-    }
-
-    // ── Break mode ──
-    if (this.breakMode) {
-      this.breakTimer -= dt;
-      // Power bar drains from 100% → 0% over the break duration
-      this.power = (this.breakTimer / BREAK_DURATION) * 100;
-      // Blink urgently when below 25%
-      const urgent = this.power < 25;
-      this.hud.setPowerBarUrgent(urgent);
-      if (urgent && !this._urgentPlayed) {
-        this._urgentPlayed = true;
-        soundUrgent();
-      }
-      if (this.breakTimer <= 0) {
-        this.breakMode = false;
-        this.power = 0;
-        this.hud.setPowerBarFull(false);
-        this.hud.setPowerBarUrgent(false);
-        this.hud.hideBreakTag();
-        this._urgentPlayed = false; // reset flag so next break mode can play urgent sound
-        // Brief invincibility + flash to prevent instant death on obstacle player was about to break
-        this.invincibleTimer = Math.max(this.invincibleTimer, 0.5);
-        this.shakeTime = Math.max(this.shakeTime, 0.15);
-        this.hud.flashOverlayCustom('255,92,108', 0.25, '255,194,77', '0', 250);
-      }
-    }
-    if (this.shakeTime > 0) this.shakeTime -= dt;
-
-    this.trail.push({ x: this.player.x, y: this.player.y });
-    if (this.trail.length > 12) this.trail.shift();
-
-    this.updateObstacles();
-
-    this.hud.updatePowerBar(this.power);
-
-    // ── Magnet orbs: attract toward player ──
+  private updateMagnetOrbs(dt: number): void {
     for (const p of this.particles) {
       if (p.type === 'orb' && this.activePowerUp === 'magnet') {
         const dx = (this.player.x + 10) - p.x;
@@ -540,7 +500,6 @@ export class Game {
       }
     }
 
-    // ── Collect orbs ──
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       if (p.type === 'orb' && this.activePowerUp === 'magnet') {
@@ -557,15 +516,12 @@ export class Game {
       }
     }
 
-    // ── Update magnet orb count ──
     if (this.activePowerUp === 'magnet') {
       this.hud.updatePowerUpOrbsText(String(this.magnetOrbs));
     }
+  }
 
-    updateParticles(this.particles, dt);
-    this.particles = this.particles.filter(p => p.life > 0);
-
-    // ── Autofocus ──
+  private updateAutofocus(dt: number): void {
     if (this.activePowerUp === 'autofocus') {
       let nearestDist = Infinity;
       let targetY = this.player.y;
@@ -581,8 +537,52 @@ export class Game {
       this.player.vy += pull * dt;
       this.player.vy = Math.max(-this.H * 0.5, Math.min(this.H * 0.5, this.player.vy));
     }
+  }
 
-    this.updateRecordPace();
+  private updatePlayerBounds(): void {
+    if (this.player.y - this.player.r < 0) {
+      this.player.y = this.player.r;
+      this.player.vy = 0;
+      if (this.modeType === 'zen') soundBounce();
+    }
+    if (this.player.y + this.player.r > this.H) {
+      if (this.modeType === 'zen') {
+        this.player.y = this.H - this.player.r;
+        this.player.vy = -this.H * 0.4;
+        this.zenFalls++;
+        soundBounce();
+      } else if (this.lives > 0) {
+        this.revive();
+        this.player.y = this.H - this.player.r;
+        this.player.vy = -this.H * 0.35;
+      } else {
+        this.endGame();
+      }
+    }
+  }
+
+  private updateBreakMode(dt: number): void {
+    if (this.breakMode) {
+      this.breakTimer -= dt;
+      this.power = (this.breakTimer / BREAK_DURATION) * 100;
+      const urgent = this.power < 25;
+      this.hud.setPowerBarUrgent(urgent);
+      if (urgent && !this._urgentPlayed) {
+        this._urgentPlayed = true;
+        soundUrgent();
+      }
+      if (this.breakTimer <= 0) {
+        this.breakMode = false;
+        this.power = 0;
+        this.hud.setPowerBarFull(false);
+        this.hud.setPowerBarUrgent(false);
+        this.hud.hideBreakTag();
+        this._urgentPlayed = false;
+        this.invincibleTimer = Math.max(this.invincibleTimer, 0.5);
+        this.shakeTime = Math.max(this.shakeTime, 0.15);
+        this.hud.flashOverlayCustom('255,92,108', 0.25, '255,194,77', '0', 250);
+      }
+    }
   }
 
   private spawnObstacle(): { gapY: number; gapH: number } {
@@ -613,7 +613,7 @@ export class Game {
     this.hud.setPowerBarFull(true);
     this.hud.showBreakTag();
     soundBreak();
-    if (navigator.vibrate) navigator.vibrate(40);
+    vibrate(40);
     spawnBreakBurst(this.particles, this.player.x, this.player.y);
     this.hud.quickFlash(80);
   }
@@ -630,7 +630,7 @@ export class Game {
     this.invincibleTimer = INVINCIBILITY_DURATION;
     this.shakeTime = 0.25;
     soundRevive();
-    if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
+    vibrate([40, 30, 60]);
     this.hud.flashOverlayCustom('255,92,108', 0.3, '255,92,108', '0.15', 300);
     spawnReviveBurst(this.particles, this.player.x, this.player.y);
 
@@ -639,12 +639,8 @@ export class Game {
       this.shatterObstacle(o, topY);
     }
 
-    // Show "reviveu!" text — set text BEFORE showing to avoid flash of wrong value
-    const comboEl = document.getElementById('comboTag');
-    if (comboEl) {
-      comboEl.textContent = 'reviveu! ❤️';
-      comboEl.classList.add('show');
-    }
+    // Show "reviveu!" text via HUD
+    this.hud.showComboTagText('reviveu! ❤️');
     setTimeout(() => this.hud.hideComboTag(), 600);
   }
 
@@ -677,9 +673,9 @@ export class Game {
       if (withinX && !o.broken) {
         const topY = o.gapY;
         const botY = o.gapY + o.gapH;
-        const colliding = this.player.y - this.player.r < topY || this.player.y + this.player.r > botY;
+        const insideObstacle = this.player.y - this.player.r < topY || this.player.y + this.player.r > botY;
 
-        if (colliding) {
+        if (insideObstacle) {
           if (this.breakMode) {
             if (!o.passed) {
               o.passed = true;
@@ -691,7 +687,7 @@ export class Game {
             o.broken = true;
             this.shakeTime = 0.18;
             soundBreak();
-            if (navigator.vibrate) navigator.vibrate(30);
+            vibrate(30);
             this.hud.quickFlash(80);
             this.shatterObstacle(o, topY);
           } else if (this.activePowerUp === 'shield' || this.activePowerUp === 'plating') {
@@ -704,7 +700,7 @@ export class Game {
             }
             this.shakeTime = 0.15;
             soundBreak();
-            if (navigator.vibrate) navigator.vibrate(20);
+            vibrate(20);
             const flashRgb = isPlating ? '255,138,101' : '93,186,255';
             this.hud.flashOverlayCustom(flashRgb, 0.25, '255,194,77', '0.15', 150);
             this.shatterObstacle(o, topY);
@@ -773,7 +769,7 @@ export class Game {
       this.hud.showRecordBanner();
       this.shakeTime = Math.max(this.shakeTime, 0.15);
       soundRecord();
-      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+      vibrate([30, 50, 30]);
       setTimeout(() => this.hud.hideRecordBanner(), 1500);
       spawnRecordBurst(this.particles, this.player.x, this.player.y);
     }
@@ -798,7 +794,7 @@ export class Game {
 
     if (this.modeType !== 'zen') {
       soundGameOver();
-      if (navigator.vibrate) navigator.vibrate(60);
+      vibrate(60);
     }
 
     this.scoring.saveBestIfNeeded(this.score, this.modeType);

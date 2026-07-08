@@ -1,5 +1,6 @@
 import type { Particle, PowerUpType } from './types';
 import { COLORS } from './types';
+import { POWERUP_RENDER_COLORS } from './powerups';
 
 // ─── Particle spawning ─────────────────────────────────────
 
@@ -110,19 +111,8 @@ export function spawnBreakBurst(particles: Particle[], px: number, py: number): 
   }
 }
 
-const POWERUP_COLORS: Record<PowerUpType, string> = {
-  shield: COLORS.shield,
-  slowmo: COLORS.slowmo,
-  doublepulse: COLORS.doublepulse,
-  magnet: COLORS.magnet,
-  freeze: COLORS.freeze,
-  plating: COLORS.plating,
-  autofocus: COLORS.autofocus,
-  life: COLORS.red,
-};
-
 export function spawnPowerUpCollect(particles: Particle[], px: number, py: number, type: PowerUpType): void {
-  const color = POWERUP_COLORS[type];
+  const color = POWERUP_RENDER_COLORS[type];
 
   // Ring burst
   particles.push({ x: px, y: py, r: 6, life: 0.6, type: 'powerup-ring', color });
