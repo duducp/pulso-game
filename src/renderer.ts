@@ -114,27 +114,30 @@ export class Renderer {
       const bob = Math.sin(pu.phase * 3) * 4;
       const color = POWERUP_RENDER_COLORS[pu.type];
 
+      // Outer glow
       ctx.shadowColor = color;
-      ctx.shadowBlur = 24;
+      ctx.shadowBlur = 20;
       ctx.fillStyle = color;
-      ctx.globalAlpha = 0.12 + Math.sin(pu.phase * 4) * 0.06;
+      ctx.globalAlpha = 0.15;
       ctx.beginPath();
       ctx.arc(pu.x, pu.y + bob, 28, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
 
+      // Solid background circle
       ctx.fillStyle = color;
-      ctx.globalAlpha = 0.25;
+      ctx.globalAlpha = 0.55;
       ctx.beginPath();
-      ctx.arc(pu.x, pu.y + bob, 26, 0, Math.PI * 2);
+      ctx.arc(pu.x, pu.y + bob, 22, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
 
+      // Emoji
       ctx.font = '21px sans-serif';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob - 10.5);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob);
     }
   }
 

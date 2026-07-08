@@ -449,7 +449,8 @@ export class Game {
   }
 
   private updateSpawn(): void {
-    const interval = Math.max(1.5 - this.score * 0.02, 0.9);
+    const crossTime = (this.W + 60) / this.speed;
+    const interval = Math.max(crossTime * 0.48, 0.6);
     if (this.tick - this.lastSpawn > interval) {
       this.lastSpawn = this.tick;
       const gapInfo = this.spawnObstacle();
