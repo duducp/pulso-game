@@ -133,7 +133,7 @@ export class Renderer {
       ctx.fillStyle = color;
       ctx.globalAlpha = 0.25;
       ctx.beginPath();
-      ctx.arc(pu.x, pu.y + bob, 20, 0, Math.PI * 2);
+      ctx.arc(pu.x, pu.y + bob, 22, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
 
@@ -141,7 +141,7 @@ export class Renderer {
       ctx.font = '21px "Noto Color Emoji", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob + 1);
+      ctx.fillText(POWERUP_ICONS[pu.type], pu.x, pu.y + bob);
     }
 
     // Particles
