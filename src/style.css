@@ -1366,8 +1366,8 @@ button:active {
   top: 68px;
   right: 18px;
   z-index: 15;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   margin: 0;
   display: flex;
@@ -1376,9 +1376,9 @@ button:active {
   background: transparent;
   border: none;
   border-radius: 50%;
-  font-size: 13px;
+  font-size: 18px;
   color: var(--dim);
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: pointer;
   transition: opacity 0.2s ease;
   line-height: 1;
