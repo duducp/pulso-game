@@ -9,6 +9,7 @@ import { todayStr } from './helpers';
 import { initStartScreen, setTouchSwiped, setSavedName, updatePlayerStats } from './startScreen';
 import { initGameOverScreen } from './gameOverScreen';
 import { initPauseScreen, animatePauseClose } from './pauseScreen';
+import { APP_VERSION, CACHE_NAME } from './version';
 
 // ─── DOM refs ─────────────────────────────────────────────
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -65,14 +66,28 @@ function cacheLoadedResources(): void {
   urls.push(origin + '/fonts/space-grotesk-600.ttf');
   urls.push(origin + '/fonts/space-grotesk-700.ttf');
   if (urls.length === 0) return;
-  caches.open('pulso-v2').then(cache =>
+  caches.open(CACHE_NAME).then(cache =>
     Promise.allSettled(urls.map(u => cache.add(u).catch(() => {})))
   ).catch(() => {});
 }
 
 window.addEventListener('load', () => {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      const sendVersion = () => {
+        const sw = reg.installing || reg.waiting || reg.active;
+        sw?.postMessage({ type: 'SET_VERSION', version: APP_VERSION });
+      };
+      if (reg.active) {
+        sendVersion();
+      } else {
+        reg.addEventListener('updatefound', () => {
+          reg.installing?.addEventListener('statechange', () => {
+            if (reg.installing?.state === 'activated') sendVersion();
+          });
+        });
+      }
+    }).catch(() => {});
   }
 
   if (!('serviceWorker' in navigator) || !('caches' in window)) {
@@ -215,3 +230,23 @@ game.onBeginRun = () => {
   document.getElementById('startScreen')?.classList.add('hidden');
   document.getElementById('overScreen')?.classList.add('hidden');
 };
+
+// ─── Version display + SW update notification ───────────
+const versionEl = document.getElementById('appVersion');
+if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
+
+if ('serviceWorker' in navigator) {
+  let bannerShown = false;
+  navigator.serviceWorker.addEventListener('message', (e: MessageEvent) => {
+    if (e.data?.type === 'SW_UPDATED' && !bannerShown) {
+      bannerShown = true;
+      const banner = document.getElementById('updateBanner');
+      if (banner) {
+        banner.classList.add('visible');
+        banner.querySelector('.ub-reload')?.addEventListener('click', () => {
+          location.reload();
+        });
+      }
+    }
+  });
+}
