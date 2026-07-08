@@ -621,7 +621,6 @@ h1 {
 .pu-nav-btn {
   background: transparent;
   border: 1px solid var(--line);
-  color: var(--dim);
   width: 34px;
   height: 34px;
   display: flex;
@@ -629,19 +628,38 @@ h1 {
   justify-content: center;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 13px;
-  font-family: 'Space Grotesk', sans-serif;
   flex-shrink: 0;
   padding: 0;
   margin: 0;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pu-nav-btn::before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-style: solid;
+  border-color: var(--dim);
+  border-width: 0 0 2px 2px;
+  transition: border-color 0.15s ease;
+}
+
+.pu-nav-btn[data-dir="-1"]::before {
+  transform: rotate(45deg);
+}
+
+.pu-nav-btn[data-dir="1"]::before {
+  transform: rotate(-135deg);
 }
 
 @media (hover: hover) {
   .pu-nav-btn:hover {
     border-color: var(--cyan);
-    color: var(--cyan);
     background: rgba(77, 240, 224, 0.08);
+  }
+  .pu-nav-btn:hover::before {
+    border-color: var(--cyan);
   }
 }
 

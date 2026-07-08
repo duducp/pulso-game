@@ -27,14 +27,14 @@ function renderPuModalItem(idx: number, getMode: () => string): void {
 
   puCard.innerHTML =
     `<div class="pu-single-wrap">` +
-      `<button class="pu-nav-btn" data-dir="-1" aria-label="Anterior">◀</button>` +
+      `<button class="pu-nav-btn" data-dir="-1" aria-label="Anterior"></button>` +
       `<div class="pu-single-content">` +
         `<div class="pu-big-icon" style="${available ? '' : 'opacity:0.35'}">${POWERUP_ICONS[type]}</div>` +
         `<div class="pu-name">${POWERUP_NAMES[type]}</div>` +
         `<div class="pu-desc">${POWERUP_DESC[type]}</div>` +
         `<div class="pu-dots">${dots}</div>` +
       `</div>` +
-      `<button class="pu-nav-btn" data-dir="1" aria-label="Próximo">▶</button>` +
+      `<button class="pu-nav-btn" data-dir="1" aria-label="Próximo"></button>` +
     `</div>`;
 
   puCard.querySelectorAll('.pu-nav-btn').forEach((btn) => {
