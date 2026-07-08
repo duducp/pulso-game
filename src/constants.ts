@@ -33,6 +33,9 @@ export const LIFE_COLLECT_PAUSE = 1.2;
 /** Duration of the game-freeze after losing a life (revive). */
 export const REVIVE_PAUSE = 0.6;
 
+/** Minimum physical gap (px) between consecutive obstacles. */
+export const MIN_OBSTACLE_GAP_PX = 250;
+
 // ─── Colors ─────────────────────────────────────────────────
 export const COLORS = {
   cyan: '#4DF0E0',

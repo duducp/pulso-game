@@ -3,7 +3,7 @@ import {
   POWER_PASS, POWER_NEAR, BREAK_DURATION,
   TIMED_DURATION, SURVIVAL_SPEED_MULT,
   LIVES_MAX, INVINCIBILITY_DURATION, LIFE_POINTS, LIFE_COLLECT_PAUSE,
-  REVIVE_PAUSE,
+  REVIVE_PAUSE, MIN_OBSTACLE_GAP_PX,
 } from './constants';
 import {
   POWERUP_SHIELD_DURATION,
@@ -462,7 +462,9 @@ export class Game {
   private updateSpawn(): void {
     const crossTime = (this.W + 60) / this.speed;
     const interval = Math.max(crossTime * 0.48, 0.6);
-    if (this.tick - this.lastSpawn > interval) {
+    // Ensure minimum physical gap between obstacles
+    const minInterval = MIN_OBSTACLE_GAP_PX / this.speed;
+    if (this.tick - this.lastSpawn > Math.max(interval, minInterval)) {
       this.lastSpawn = this.tick;
       const gapInfo = this.spawnObstacle();
       const spawnChance = Math.min(0.50, 0.15 + this.score * 0.005);
