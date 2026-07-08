@@ -108,7 +108,7 @@ export function initCarousel(
       e.stopPropagation();
       if (swipeGuard) { swipeGuard = false; return; }
       focusMode(i, game);
-      onPlay?.();
+      if (i === selectedIdx) onPlay?.();
     });
     modeSelector.appendChild(btn);
   });
