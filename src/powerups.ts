@@ -37,7 +37,7 @@ export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
 export const POWERUP_ICONS: Record<string, string> = {
   shield: '🛡️',
   slowmo: '⏱️',
-  doublepulse: '💥',
+  doublepulse: '2️⃣',
   magnet: '🧲',
   freeze: '❄️',
   plating: '🔰',
@@ -73,7 +73,7 @@ export const POWERUP_RENDER_COLORS: Record<PowerUpType, string> = {
 export const POWERUP_DESC: Record<string, string> = {
   shield: 'Barreira energética. Absorve uma colisão — proteção total por 5s.',
   slowmo: 'O tempo desacelera. Obstáculos em câmera lenta por 3s.',
-  doublepulse: 'Cada pulso vale o dobro. Pontuação acelerada por 5s.',
+  doublepulse: 'Cada obstáculo ultrapassado vale 2 pontos. Pontuação acelerada por 5s.',
   magnet: 'Atrai orbs extras dos obstáculos. Colete pontos extras por 5s.',
   freeze: 'O cronômetro congela. Ganhe segundos preciosos por 4s.',
   plating: 'Revestimento resistente. Suporta múltiplos impactos por 3s.',
